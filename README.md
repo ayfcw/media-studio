@@ -1,120 +1,80 @@
-# 自媒体智能体平台（media-studio）
+# 自媒体智能体平台
 
-一站式自媒体内容工作台：**采集 → AI 拆解 → 仿写 → 一键成片 → 复盘归档**，融合两个高星开源项目（DTK 采集、MoneyPrinterTurbo 成片）+ 自研编排层（FastAPI 网关 + AI 分析引擎 + React 前端 + MCP 服务）。
+从一条抖音链接到一条成品短视频，全程自动化。**爆款拆解、AI 仿写、一键成片、账号复盘**，一个平台全部搞定。
 
-## 功能总览
+## 平台亮点
 
-| 智能体 | 说明 |
-|---|---|
-| 爆款视频拆解 | 粘贴抖音分享链接，采集元数据（标题/文案/标签/赞藏评转）+ 缓存无水印原视频，AI 输出结构化拆解报告（赛道/钩子/结构/爆点/改写建议），报告页可直接播放原视频 |
-| 博主对标拆解 | 输入博主主页，自动采集作品列表，输出定位/受众/内容支柱/对标作品分析 |
-| 关键词找爆款 | 按关键词梳理爆款清单、共性规律与切入角度 |
-| 原创文案生成 | 生成口播稿（钩子/正文/CTA）+ 标题候选 + 话题标签 + 素材搜索词 |
-| 仿写三件套 | 结构仿写 / 选题提炼 / 同主题去重，可注入"我的账号信息"个性化输出 |
-| 一键成片 | AI 文案 → Edge TTS 配音 → 字幕 → 本地素材库/Pixabay 取材 → FFmpeg 合成出片 |
-| 账号复盘诊断 | 结合自动采集的作品数据，诊断问题并给出优先动作 |
-| 内容沉淀库 | 成功任务自动归档，支持关键词/类型检索、飞书多维表格同步 |
+- **拆解报告自带原视频播放** —— 拆解时自动缓存无水印原视频到云端，报告页边看画面边对照 AI 分析，可拖进度、随时回看
+- **7 大智能体全流程覆盖** —— 爆款拆解 / 博主对标 / 关键词找爆款 / 原创文案 / 仿写三件套 / 一键成片 / 账号复盘
+- **一键成片全自动** —— AI 写文案 → 配音 → 字幕 → 匹配素材 → 合成出片，提交后约 6 分钟拿成品，任务进度实时可见
+- **仿写三件套** —— 结构仿写 / 选题提炼 / 同主题去重，还能填入你自己的账号定位，让 AI 写出"你的风格"
+- **素材网页上传即用** —— 拖拽上传视频片段，上传完立即可用于成片，无需碰服务器
+- **数据资产自动沉淀** —— 每次成功分析自动归档进素材库，支持关键词检索、飞书多维表格一键同步
+- **凭据全程加密** —— 所有 API Key 加密存储、永不明文回传；演示模式无 Key 也能跑通全流程
+- **微信直接用** —— 云端部署后手机微信打开网址即可操作，不依赖任何一台电脑开机
+- **开放 MCP 接口** —— 内置 MCP 服务，AI 客户端（如 Claude）可直接调用平台全部能力
 
-## 架构
+## 功能一览
 
-```
-┌─────────────────────────── 浏览器（React + antd）───────────────────────────┐
-│  仪表盘 / 工作台 / 任务中心 / 素材库（视频素材上传 + 内容沉淀）/ 系统设置      │
-└──────────────────────────────┬──────────────────────────────────────────────┘
-                               │ /api/v1/*
-┌──────────────────────────────▼──────────────────────────────────────────────┐
-│                      编排网关 studio-gateway (FastAPI :8200)                │
-│   任务状态机(SQLite) · 鉴权 · 素材上传 · 视频缓存 · MPT 地址改写 · 飞书同步    │
-└───────┬──────────────────────┬──────────────────────────┬──────────────────┘
-        │                      │                          │
-┌───────▼────────┐   ┌─────────▼──────────┐   ┌───────────▼──────────┐
-│ DTK 采集 (Docker)│   │ AI 分析引擎         │   │ MPT 成片引擎          │
-│ Evil0ctal/      │   │ studio-analytics    │   │ harry0703/           │
-│ Douyin_TikTok_  │   │ :8100               │   │ MoneyPrinterTurbo    │
-│ Download_API    │   │ OpenAI 兼容 LLM     │   │ :8090 / GHCR 镜像    │
-│ :8000           │   │ 6 类结构化提示词     │   │ FFmpeg 合成           │
-└────────────────┘   └────────────────────┘   └──────────────────────┘
-        └── MCP 服务 studio-mcp :8300（供 AI 客户端调用平台能力）
-```
-
-**设计原则**：核心能力全部来自成熟开源项目，自研代码只做"胶水层"（编排、状态机、鉴权、前端），保持最小可维护面。
-
-## 目录结构
-
-```
-├── media-studio/            # 自研层
-│   ├── studio/gateway/      # 编排网关（任务状态机/素材/媒体缓存/鉴权）
-│   ├── studio/analytics/    # AI 分析引擎（提示词/Schema/LLM 客户端）
-│   ├── studio/mcp/          # MCP 服务（AI 客户端可调用平台能力）
-│   ├── studio/feishu/       # 飞书多维表格同步
-│   ├── studio/common/       # 加密设置存储（Fernet）
-│   └── frontend/            # React 18 + antd 5 + Vite
-├── deploy_cloud/            # 云端部署（compose/nginx/Dockerfile/初始化脚本）
-├── start_all.ps1            # 本地一键启动（幂等）
-└── _gen_env.py              # DTK .env 生成器（随机密钥）
-```
-
-> 上游开源项目（DTK / MoneyPrinterTurbo / XHS-Downloader）通过 git clone 独立获取，不入本仓库。
+| 智能体 | 输入 | 输出 |
+|---|---|---|
+| 爆款视频拆解 | 抖音分享链接 | 结构化拆解报告（赛道/钩子/结构/爆点/改写建议）+ 原视频回放 |
+| 博主对标拆解 | 博主主页链接 | 定位/受众/内容支柱/对标作品分析 |
+| 关键词找爆款 | 关键词 | 爆款清单 + 共性规律 + 切入角度 |
+| 原创文案生成 | 主题 | 口播稿 + 标题候选 + 话题标签 + 素材搜索词 |
+| 仿写三件套 | 原文案 | 新文案（三种模式可选） |
+| 一键成片 | 主题 | 成品短视频（文案/配音/字幕/素材全自动） |
+| 账号复盘诊断 | 自己的主页链接 | 问题诊断 + 优先动作清单 |
 
 ## 快速开始
 
-### 前置要求
-- Windows + Docker Desktop（DTK 采集栈）
-- Python 3.12 + [uv](https://docs.astral.sh/uv/)（studio 层）
-- Node.js 18+（前端）
-- 一个 OpenAI 兼容 LLM Key（DeepSeek / Kimi / 通义等）
+### 需要准备
 
-### 1. 获取上游项目（仓库根目录下）
-```bash
-git clone https://github.com/Evil0ctal/Douyin_TikTok_Download_API.git
-git clone https://github.com/harry0703/MoneyPrinterTurbo.git
-python _gen_env.py   # 生成 DTK 的 .env（随机密钥）
-```
+- Windows 电脑 + [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- [Python 3.12+](https://www.python.org/) 与 [uv](https://docs.astral.sh/uv/)、[Node.js 18+](https://nodejs.org/)
+- 一个 OpenAI 兼容的大模型 API Key（DeepSeek / Kimi / 通义均可，[DeepSeek 申请地址](https://platform.deepseek.com/api_keys)）
+- 一个抖音账号的 Cookie（用于采集，平台内有引导）
 
-### 2. 启动采集与成片引擎
+### 三步启动
+
 ```powershell
-# DTK 采集栈（Docker）
+# ① 启动采集与成片引擎（首次需先完成各自的初始化，见下方配置说明）
 docker compose -p dtk -f Douyin_TikTok_Download_API/docker/compose.yml up -d
-# MPT 成片（源码运行）
-cd MoneyPrinterTurbo && uv venv && uv pip install -r requirements.txt && python main.py
-```
+cd MoneyPrinterTurbo; python main.py; cd ..
 
-### 3. 启动 studio 层与前端
-```powershell
-cd media-studio
-uv sync
+# ② 启动平台（AI 分析 / 编排网关 / MCP / 前端）
+cd media-studio; uv sync
 uvicorn studio.analytics.app:app --port 8100
 uvicorn studio.gateway.app:app --port 8200   # 需环境变量 MPT_URL=http://127.0.0.1:8090
-STUDIO_MCP_HTTP=1 python -m studio.mcp.server # 可选，:8300
-cd frontend && npm install && npm run dev     # http://127.0.0.1:5173
+STUDIO_MCP_HTTP=1 python -m studio.mcp.server
+cd frontend; npm install; npm run dev
+
+# ③ 打开 http://127.0.0.1:5173 开始使用
 ```
 
-或直接运行 `./start_all.ps1`（幂等，自动拉起全部服务）。
+> 也可以直接运行仓库里的 `start_all.ps1`，自动拉起全部服务（幂等，已在运行的不重复启动）。
 
-### 4. 配置密钥
-前端「系统设置」页填入 LLM API Key（Fernet 加密落盘，可随时更换）；DTK 首次启动需从容器日志取 setup token 初始化管理员，并导入抖音 Cookie。
+## 需要配置什么
 
-## 云端部署
+全部在网页「**系统设置**」页完成，凭据加密存储、填一次管一年：
 
-`deploy_cloud/` 提供完整的一键部署方案：
+| 配置项 | 去哪拿 | 必须？ |
+|---|---|---|
+| **大模型 API Key** | [platform.deepseek.com](https://platform.deepseek.com/api_keys) 等 | 是（不填则是演示模式，输出为示例数据） |
+| **采集服务初始化** | 首次启动采集引擎后，从容器日志取 setup token 初始化管理员账号 | 是（一次性） |
+| **抖音 Cookie** | 电脑浏览器登录抖音 → F12 → 复制请求头里的 cookie | 是（约半年有效，过期重新复制） |
+| **采集 API Key** | 采集服务控制台里创建（默认 `http://127.0.0.1:8000`） | 是（一次性） |
+| 成片素材 | 「素材库 → 视频素材」直接网页拖拽上传 mp4 | 推荐上传几段（也可选在线取材，需对应 Key） |
+| 飞书多维表格 | 飞书开放平台创建应用，拿到 App ID / Secret | 否（想要自动同步分析结果再配） |
 
-- `docker-compose.cloud.yml`：MPT（官方 GHCR 镜像）+ gateway/analytics（自构建）+ nginx（口令鉴权 + API Key 注入，前端零改动）
-- nginx 静态服务 + `/api/` 反代网关 + `/mpt/` 反代成片产物（视频在线播放）
-- 素材目录网关与 MPT 容器共享挂载，网页上传即用
-- `init_dtk.sh` / `setup_dtk_key.sh`：DTK 云端初始化（密码经环境变量注入，不入库）
+配置完成后，到「工作台」选一个智能体提交任务，「任务中心」实时看进度和结构化结果。
+
+## 云端部署（打开网址就能用）
+
+`deploy_cloud/` 内置完整部署方案：一条 compose 拉起全部服务，nginx 统一入口（口令鉴权 + 视频播放反代），支持 HTTPS 前置。部署后手机微信、任何设备打开 `http://服务器IP:9000` 即可使用，素材网页上传，成片云端出片。
 
 ## 安全说明
 
-- 所有凭据（LLM Key / DTK Key / 飞书 Secret）Fernet 加密存储，永不明文回传
-- 仓库内的 `nginx.conf` / `mpt-config.toml` / 初始化脚本均为**脱敏模板**（`ACCESS_TOKEN` / `GATEWAY_API_KEY` / `DTK_ADMIN_PASSWORD` 占位），真实值只存在于部署环境
-- 建议部署时：DTK 与各服务只绑内网/回环地址，公网入口加鉴权
-
-## 致谢
-
-核心能力基于以下优秀开源项目：
-
-- [Evil0ctal/Douyin_TikTok_Download_API](https://github.com/Evil0ctal/Douyin_TikTok_Download_API)（Apache-2.0）—— 抖音/TikTok 采集引擎
-- [harry0703/MoneyPrinterTurbo](https://github.com/harry0703/MoneyPrinterTurbo)（MIT）—— AI 短视频成片引擎
-- [JoeanAmier/XHS-Downloader](https://github.com/JoeanAmier/XHS-Downloader) —— 小红书采集（可选模块）
-
-本仓库的自研部分遵循同样开放的精神，欢迎 Issue / PR。
+- 所有凭据 Fernet 加密落盘，永不明文回传前端
+- 仓库内配置均为脱敏模板（`ACCESS_TOKEN` / `GATEWAY_API_KEY` / `DTK_ADMIN_PASSWORD` 占位符），真实值只存在于你的部署环境
+- 采集等内部服务只绑内网/回环地址，公网入口统一走鉴权
