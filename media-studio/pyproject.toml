@@ -1,0 +1,27 @@
+[project]
+name = "media-studio"
+version = "0.1.0"
+description = "自媒体智能体平台：采集 + AI 分析 + 一键成片（DTK / XHS / MPT 融合）"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "httpx>=0.27",
+    "openai>=1.40",
+    "mcp>=1.2",
+    "cryptography>=43.0",
+    "python-multipart>=0.0.9",
+    "aiosqlite>=0.20",
+]
+
+[tool.uv]
+package = false
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["studio"]

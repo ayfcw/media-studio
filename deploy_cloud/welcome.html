@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>登录 · 陈镇鑫傻瓜式操作平台</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #fff;
+    color: #1d1d1f;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "SF Pro Text", "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .box { width: 100%; max-width: 330px; text-align: center; }
+
+  .mark { margin-bottom: 18px; }
+  .mark svg { width: 40px; height: 40px; }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    margin-bottom: 8px;
+  }
+  .sub { font-size: 15px; color: #6e6e73; margin-bottom: 34px; }
+
+  field { display: block; }
+  input {
+    width: 100%;
+    height: 52px;
+    padding: 0 18px;
+    font-size: 17px;
+    font-family: inherit;
+    color: #1d1d1f;
+    background: #fff;
+    border: 1px solid #d2d2d7;
+    border-radius: 12px;
+    outline: none;
+    transition: border-color .18s, box-shadow .18s;
+  }
+  input::placeholder { color: #a1a1a6; }
+  input:focus {
+    border-color: #0071e3;
+    box-shadow: 0 0 0 3.5px rgba(0, 113, 227, .22);
+  }
+
+  button {
+    margin-top: 16px;
+    width: 100%;
+    height: 48px;
+    font-size: 17px;
+    font-family: inherit;
+    color: #fff;
+    background: #0071e3;
+    border: none;
+    border-radius: 980px;
+    cursor: pointer;
+    transition: background .18s, transform .12s;
+  }
+  button:hover { background: #0077ed; }
+  button:active { transform: scale(.985); }
+
+  .err { margin-top: 14px; font-size: 13px; color: #e30000; min-height: 18px; }
+
+  .foot {
+    position: fixed;
+    bottom: 26px; left: 0; right: 0;
+    text-align: center;
+    font-size: 12px;
+    color: #86868b;
+  }
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="mark">
+    <svg viewBox="0 0 24 24" fill="#1d1d1f"><path d="M12 2.6a4.4 4.4 0 0 1 4.4 4.4c0 .9-.27 1.74-.73 2.44A4.9 4.9 0 0 1 17 9.4a4.9 4.9 0 0 1 4.4 7.06c.26.55.4 1.16.4 1.8a4.4 4.4 0 0 1-4.4 4.4c-.86 0-1.66-.24-2.34-.67-.9.55-1.96.87-3.06.87s-2.17-.32-3.06-.87A4.38 4.38 0 0 1 6.6 22.7 4.4 4.4 0 0 1 2.2 18.3c0-.64.14-1.25.4-1.8A4.9 4.9 0 0 1 7 9.4c.47 0 .92.06 1.33.19A4.37 4.37 0 0 1 7.6 7 4.4 4.4 0 0 1 12 2.6Z"/></svg>
+  </div>
+  <h1>陈镇鑫傻瓜式操作平台</h1>
+  <p class="sub">输入访问口令以继续</p>
+  <input id="tk" type="text" placeholder="访问口令" autocomplete="off" autofocus />
+  <button onclick="go()">登录</button>
+  <div class="err" id="err"></div>
+</div>
+<div class="foot">验证通过后一年内免输入 · 受保护的个人工作区</div>
+<script>
+  function go() {
+    var v = document.getElementById('tk').value.trim();
+    if (!v) { document.getElementById('err').textContent = '请输入口令'; return; }
+    location.href = '/enter?token=' + encodeURIComponent(v);
+  }
+  document.getElementById('tk').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') go();
+  });
+  if (location.search.indexOf('bad=1') >= 0) {
+    document.getElementById('err').textContent = '口令不正确，请重新输入';
+  }
+</script>
+</body>
+</html>

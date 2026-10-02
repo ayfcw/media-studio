@@ -1,0 +1,28 @@
+# ===== 上游开源仓库（各自独立管理，不入本仓库）=====
+Douyin_TikTok_Download_API/
+MoneyPrinterTurbo/
+XHS-Downloader/
+
+# ===== 运行时数据与敏感文件 =====
+data/
+deploy_cloud/data/
+deploy_cloud/.env
+deploy_cloud/gateway_api_key.txt
+deploy_cloud/htpasswd
+deploy_cloud/dy_cookie.txt
+deploy_cloud/dy_ua.txt
+*.env
+.secret
+
+# ===== 构建产物（任意层级）=====
+.venv/
+node_modules/
+__pycache__/
+*.pyc
+**/frontend/dist/
+web-dist/
+*.tar
+*.tar.gz
+*.zip
+*.log
+.DS_Store
