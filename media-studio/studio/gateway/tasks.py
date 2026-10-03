@@ -16,6 +16,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
+# HuggingFace 直连在国内不可达，转写模型经镜像站下载（仅影响 faster-whisper）；
+# ETag 检查强制 5 秒超时，防止代理/TUN 异常时请求无限挂起
+os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
+os.environ.setdefault("HF_HUB_ETAG_TIMEOUT", "5")
+os.environ.setdefault("HF_HUB_DOWNLOAD_TIMEOUT", "30")
+
 from studio.gateway.clients import AnalyticsClient, DTKClient, MPTClient
 
 DATA_DIR = Path(os.environ.get("STUDIO_DATA_DIR", Path(__file__).resolve().parents[3] / "data"))
@@ -23,6 +29,57 @@ DB_PATH = DATA_DIR / "gateway.db"
 MEDIA_DIR = DATA_DIR / "media"
 
 MATERIAL_EXTS = {".mp4", ".mov", ".webm", ".avi", ".mkv"}
+
+# ---------------- 口播逐字稿（faster-whisper，CPU int8） ----------------
+_ASR_MODEL = os.environ.get("STUDIO_ASR_MODEL", "small")
+# 内存吃紧的机器可设 STUDIO_ASR_EPHEMERAL=1：每次转写临时加载模型、用完释放
+_ASR_EPHEMERAL = os.environ.get("STUDIO_ASR_EPHEMERAL") == "1"
+_asr_lock = threading.Lock()          # 仅保护懒加载（不可重入，勿嵌套）
+_asr_sem = threading.Semaphore(1)     # 串行化转写（限制 CPU/内存峰值）
+_asr_model: Any = None
+
+
+def _load_asr_model() -> Any:
+    from faster_whisper import WhisperModel
+
+    kwargs = dict(
+        device="cpu", compute_type="int8", download_root=str(DATA_DIR / "models")
+    )
+    try:  # 已缓存则完全离线加载，避免任何网络请求挂起任务
+        return WhisperModel(_ASR_MODEL, local_files_only=True, **kwargs)
+    except Exception:
+        return WhisperModel(_ASR_MODEL, **kwargs)
+
+
+def _get_asr_model() -> Any:
+    global _asr_model
+    with _asr_lock:
+        if _asr_model is None:
+            _asr_model = _load_asr_model()
+        return _asr_model
+
+
+def transcribe_video(video_path: Path) -> str | None:
+    """抽取视频口播逐字稿；失败返回 None，不阻塞主流程。
+
+    不开 VAD：唱腔/配乐类视频会被 Silero 判成非语音而整段滤空（实测），
+    无 VAD 虽可能混入少量幻听文本，但保证音乐类内容也有产出。
+    """
+    model = None
+    try:
+        with _asr_sem:
+            model = _load_asr_model() if _ASR_EPHEMERAL else _get_asr_model()
+            segments, _info = model.transcribe(str(video_path), language="zh")
+            text = "".join(seg.text for seg in segments).strip()
+            return text or None
+    except Exception:
+        return None
+    finally:
+        if _ASR_EPHEMERAL and model is not None:
+            del model
+            import gc
+
+            gc.collect()
 
 
 async def cache_video(url: str, media_id: str) -> bool:
@@ -199,16 +256,32 @@ async def h_analyze_link(p: dict[str, Any]) -> dict[str, Any]:
         post = await dtk.parse(p["url"])
     except Exception:
         post = {"url": p["url"]}  # 降级：DTK 未就绪
+
+    # 先缓存无水印视频，再转写口播逐字稿（转写放线程池，避免阻塞事件循环）
+    media_id: str | None = None
+    video_path: Path | None = None
+    src = _real_source(post)
+    if src and src.get("video_url"):
+        media_id = uuid.uuid4().hex
+        dest = MEDIA_DIR / f"{media_id}.mp4"
+        if await cache_video(src["video_url"], media_id):
+            video_path = dest
+
+    transcript: str | None = None
+    if video_path is not None and os.environ.get("STUDIO_ASR_ENABLED", "1") != "0":
+        transcript = await asyncio.to_thread(transcribe_video, video_path)
+    if transcript:
+        post = {**post, "transcript": transcript}
+
     report = await analytics.analyze("breakdown", post)
     src = _real_source(post)
     if src:
         report["source"] = src
-        # 缓存无水印视频到持久目录，报告页可在线播放（直链会过期，缓存不会）
-        if src.get("video_url"):
-            media_id = uuid.uuid4().hex
-            if await cache_video(src["video_url"], media_id):
-                report["source"]["video_media_id"] = media_id
-                report["source"].pop("video_url", None)  # 直链短暂有效，不外泄
+        if media_id:
+            report["source"]["video_media_id"] = media_id
+            report["source"].pop("video_url", None)  # 直链短暂有效，不外泄
+        if transcript:
+            report["source"]["transcript"] = transcript
     return report
 
 

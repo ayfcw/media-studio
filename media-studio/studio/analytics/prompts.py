@@ -22,7 +22,12 @@ PROMPTS: dict[str, str] = {
   "replicable_points": ["可直接复用的具体套路"],
   "risk_points": ["风险或不可学之处"],
   "suggested_rewrite": "套用该结构、换一个选题的改写思路"
-}""",
+}
+若输入数据包含 "transcript"（视频口播逐字稿），必须以逐字稿为主要分析依据：
+- hook 引用逐字稿开头的原句来解释钩子设计；
+- structure 按口播内容的实际推进划分段落，content 对应逐字稿的真实内容；
+- 额外总结口播的节奏与句式特点（如句长、排比、悬念位置），融入 replicable_points。
+没有 transcript 时才基于标题/标签等元数据合理推断。""",
     "blogger": COMMON
     + """
 任务：对一个博主做对标分析，输出 JSON，字段如下：

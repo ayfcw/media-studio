@@ -14,10 +14,18 @@ dependencies = [
     "cryptography>=43.0",
     "python-multipart>=0.0.9",
     "aiosqlite>=0.20",
+    "faster-whisper>=1.0",
+    # faster-whisper 依赖 av.open(metadata_errors=...)（av 15+ 已移除）；
+    # av 14.3+/14.4 无 cp312 Windows wheel，锁 14.2
+    "av>=14,<14.3",
 ]
 
 [tool.uv]
 package = false
+
+[[tool.uv.index]]
+url = "https://mirrors.aliyun.com/pypi/simple/"
+default = true
 
 [build-system]
 requires = ["hatchling"]

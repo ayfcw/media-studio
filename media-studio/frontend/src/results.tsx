@@ -40,6 +40,24 @@ function SourceVideo({ s }: { s: Record<string, any> }) {
   )
 }
 
+// 口播文案：AI 自动转写的逐字稿（拆解/复盘的核心依据）
+function TranscriptPanel({ s }: { s: Record<string, any> }) {
+  if (!s.transcript) return null
+  return (
+    <Card size="small" title={<Tag color="green">口播文案（AI 自动转写）</Tag>} style={{ marginBottom: 16 }}
+      extra={
+        <Button size="small" type="text" icon={<CopyOutlined />}
+          onClick={() => { navigator.clipboard.writeText(s.transcript); message.success('已复制') }}>
+          复制
+        </Button>
+      }>
+      <Paragraph style={{ whiteSpace: 'pre-wrap', marginBottom: 0, maxHeight: 220, overflowY: 'auto' }}>
+        {s.transcript}
+      </Paragraph>
+    </Card>
+  )
+}
+
 // 真实采集信息卡片（DTK 返回的真实元数据）
 function SourceCard({ s }: { s: Record<string, any> }) {
   const fmt = (v: unknown) => (typeof v === 'number' ? v.toLocaleString() : '-')
@@ -83,6 +101,7 @@ function BreakdownView({ r }: { r: Record<string, any> }) {
     <>
       <DemoBanner r={r} />
       {r.source && <SourceVideo s={r.source} />}
+      {r.source && <TranscriptPanel s={r.source} />}
       {r.source && <SourceCard s={r.source} />}
       {r.source && !r.source.video_media_id && (
         <Alert type="info" showIcon style={{ marginBottom: 16 }}
