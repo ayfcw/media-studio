@@ -133,6 +133,27 @@ class DTKClient:
             )
         return posts
 
+    async def comments(self, url: str, count: int = 20, timeout_s: float = 60) -> list[dict[str, Any]]:
+        """拉取一条视频的评论（DTK 异步任务式：POST 返回 task_id，需轮询）。"""
+        params = {"url": url, "count": min(max(int(count or 20), 1), 50), "lang": "zh"}
+        async with httpx.AsyncClient(trust_env=False, timeout=timeout_s + 30) as c:
+            r = await c.get(
+                f"{DTK_URL}/api/v1/douyin/video/comments", params=params, headers=_dtk_headers()
+            )
+            if r.status_code >= 400:
+                raise RuntimeError(f"DTK comments HTTP {r.status_code}: {r.text[:200]}")
+            data = r.json().get("data") or {}
+            task_id = data.get("task_id")
+            if task_id and data.get("state") not in ("succeeded", "done", "complete", "completed"):
+                data = await self._poll(c, task_id, timeout_s) or {}
+            result = data.get("result") or data.get("data") or data
+            if isinstance(result, dict):
+                result = (
+                    result.get("comments") or result.get("items")
+                    or result.get("list") or []
+                )
+            return result if isinstance(result, list) else []
+
     async def search(self, keyword: str, count: int = 10) -> list[dict[str, Any]]:
         raise NotImplementedError(
             "DTK v5 不提供关键词搜索（它是解析器，不是搜索引擎）；"

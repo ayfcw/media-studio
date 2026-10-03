@@ -257,6 +257,23 @@ async def h_analyze_link(p: dict[str, Any]) -> dict[str, Any]:
     except Exception:
         post = {"url": p["url"]}  # 降级：DTK 未就绪
 
+    # 评论采集（best-effort：失败不影响拆解主流程）
+    comments: list[dict[str, Any]] = []
+    web_url = post.get("web_url") if isinstance(post, dict) else None
+    if web_url:
+        try:
+            raw = await dtk.comments(web_url, count=20)
+            comments = [
+                {"text": (c.get("text") or "").strip(),
+                 "digg_count": c.get("digg_count")}
+                for c in raw
+                if isinstance(c, dict) and (c.get("text") or "").strip()
+            ][:20]
+        except Exception:
+            comments = []
+    if comments:
+        post = {**post, "comments": comments}
+
     # 先缓存无水印视频，再转写口播逐字稿（转写放线程池，避免阻塞事件循环）
     media_id: str | None = None
     video_path: Path | None = None
@@ -282,6 +299,8 @@ async def h_analyze_link(p: dict[str, Any]) -> dict[str, Any]:
             report["source"].pop("video_url", None)  # 直链短暂有效，不外泄
         if transcript:
             report["source"]["transcript"] = transcript
+    if comments:
+        report["source"]["top_comments"] = comments
     return report
 
 

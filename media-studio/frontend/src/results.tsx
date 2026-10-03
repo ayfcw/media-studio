@@ -131,7 +131,20 @@ function BreakdownView({ r }: { r: Record<string, any> }) {
       {r.risk_points?.length > 0 && (
         <p><Text type="secondary">风险提醒：</Text><Tags items={r.risk_points} color="red" /></p>
       )}
+      {r.comment_insights?.length > 0 && (
+        <p><Text type="secondary">评论区洞察：</Text><Tags items={r.comment_insights} color="orange" /></p>
+      )}
       <Alert type="info" showIcon message="改写建议" description={r.suggested_rewrite} />
+      {r.source?.top_comments?.length > 0 && (
+        <Card size="small" title={<Tag color="green">真实评论（采集于评论区）</Tag>} style={{ marginTop: 16 }}>
+          {r.source.top_comments.slice(0, 8).map((c: any, i: number) => (
+            <p key={i} style={{ margin: '4px 0', fontSize: 13 }}>
+              <Text type="secondary">👍 {typeof c.digg_count === 'number' ? c.digg_count : '-'}　</Text>
+              {c.text}
+            </p>
+          ))}
+        </Card>
+      )}
     </>
   )
 }

@@ -27,6 +27,10 @@ class BreakdownResult(BaseModel):
     replicable_points: list[str] = Field(description="可直接复用的套路")
     risk_points: list[str] = Field(default_factory=list, description="风险/不可学之处")
     suggested_rewrite: str = Field(description="套用该结构的改写建议")
+    comment_insights: list[str] = Field(
+        default_factory=list,
+        description="评论区洞察：仅当输入数据包含 comments 时输出（高赞观点/用户追问/情绪倾向/可蹭的话题点），无 comments 时留空",
+    )
 
 
 # ---------- 2. 博主对标 ----------

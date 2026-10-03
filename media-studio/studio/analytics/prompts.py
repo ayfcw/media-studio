@@ -21,8 +21,13 @@ PROMPTS: dict[str, str] = {
   "golden_points": ["爆点/高光设计"],
   "replicable_points": ["可直接复用的具体套路"],
   "risk_points": ["风险或不可学之处"],
-  "suggested_rewrite": "套用该结构、换一个选题的改写思路"
+  "suggested_rewrite": "套用该结构、换一个选题的改写思路",
+  "comment_insights": ["评论区洞察：高赞观点/用户追问方向/情绪倾向/可蹭话题点"]
 }
+若输入数据包含 "comments"（真实评论列表），comment_insights 必须基于评论原文提炼：
+- 引用高赞评论的关键表述（注明是评论区观点）；
+- 总结用户最关心的追问方向（可作为下一条视频的选题）；
+- 没有 comments 时 comment_insights 输出空数组 []。
 若输入数据包含 "transcript"（视频口播逐字稿），必须以逐字稿为主要分析依据：
 - hook 引用逐字稿开头的原句来解释钩子设计；
 - structure 按口播内容的实际推进划分段落，content 对应逐字稿的真实内容；
