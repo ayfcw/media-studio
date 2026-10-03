@@ -1,4 +1,4 @@
-﻿# 自媒体智能体平台 · 一键启动（幂等：已在运行的服务自动跳过）
+# 自媒体智能体平台 · 一键启动（幂等：已在运行的服务自动跳过）
 $ErrorActionPreference = "Continue"
 $root = "C:\Users\24688\dev"
 function Test-Port($p) { return [bool](Get-NetTCPConnection -LocalPort $p -State Listen -ErrorAction SilentlyContinue) }
@@ -55,7 +55,14 @@ if((Test-Port 8100) -and (Test-Port 8200) -and (Test-Port 8300)){
     }
 }
 
-# 4. 前端 :5173
+# 4.5 知识库 AnythingLLM（可选，:3001）
+if(Test-Port 3001){ Write-Output "[4.5/5] 知识库已在运行，跳过" }
+else {
+    Write-Output "[4.5/5] 启动知识库（AnythingLLM）..."
+    & $docker start anythingllm 2>$null | Out-Null
+}
+
+# 5. 前端 :5173
 if(Test-Port 5173){ Write-Output "[4/5] 前端已在运行，跳过" }
 else {
     Write-Output "[4/5] 启动前端..."

@@ -319,19 +319,101 @@ async def h_analyze_blogger(p: dict[str, Any]) -> dict[str, Any]:
     return report
 
 
+def _mc_search(keyword: str, count: int) -> list[dict[str, Any]]:
+    """调用本地 MediaCrawler 做抖音关键词搜索（同步子进程，供 to_thread）。
+
+    需要环境变量 STUDIO_MC_HOME（MediaCrawler 目录），首次运行会弹二维码登录
+    （SAVE_LOGIN_STATE 开启，登录一次后续免扫码）。失败抛异常，由上层降级。
+    """
+    import subprocess
+
+    mc_home = Path(os.environ.get(
+        "STUDIO_MC_HOME", r"C:\Users\24688\dev\MediaCrawler"))
+    mc_py = os.environ.get(
+        "STUDIO_MC_PYTHON", str(mc_home / ".venv" / "Scripts" / "python.exe"))
+    out_dir = MEDIA_DIR / "search" / uuid.uuid4().hex
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    cmd = [
+        mc_py, "main.py",
+        "--platform", "dy",
+        "--lt", "qrcode",
+        "--type", "search",
+        "--keywords", keyword,
+        "--save_data_option", "jsonl",
+        "--save_data_path", str(out_dir),
+        "--crawler_max_notes_count", str(min(max(count, 5), 30)),
+    ]
+    if os.environ.get("STUDIO_MC_HEADLESS", "0") == "1":
+        cmd.append("--headless")
+    proc = subprocess.run(
+        cmd, cwd=str(mc_home), capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=600,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"MediaCrawler exit {proc.returncode}: {proc.stderr[-300:]}")
+    # 只取内容文件（排除 search_comments_*.jsonl 评论数据）
+    rows: list[dict[str, Any]] = []
+    for f in sorted(out_dir.rglob("search_contents_*.jsonl")):
+        for line in f.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = line.strip()
+            if line:
+                try:
+                    rows.append(json.loads(line))
+                except Exception:
+                    pass
+    if not rows:
+        raise RuntimeError("MediaCrawler 未产出搜索结果")
+    items = []
+    for row in rows:
+        title = (row.get("title") or row.get("desc") or "").strip()
+        if not title:
+            continue
+        aweme_id = row.get("aweme_id") or row.get("content_id") or ""
+        items.append({
+            "title": title[:80],
+            "url": row.get("aweme_url") or (f"https://www.douyin.com/video/{aweme_id}" if aweme_id else None),
+            "platform": "douyin",
+            "likes": row.get("liked_count"),
+            "comments": row.get("comment_count"),
+            "collects": row.get("collected_count"),
+            "author": row.get("nickname"),
+        })
+    items.sort(key=lambda x: (x.get("likes") or 0), reverse=True)
+    return items[:count]
+
+
 async def h_search_keywords(p: dict[str, Any]) -> dict[str, Any]:
     raw = p.get("keyword") or p.get("keywords") or ""
     if isinstance(raw, list):
         raw = ", ".join(str(x) for x in raw)
     primary = str(raw).split(",")[0].strip() or str(raw)
+    count = int(p.get("count", 10) or 10)
+
+    # 首选：MediaCrawler 真实搜索（本地运行，需登录态）
     items: list[dict[str, Any]] = []
-    try:
-        items = await dtk.search(primary, int(p.get("count", 10) or 10))
-    except Exception:
-        items = []
-    return await analytics.analyze(
+    search_source = "degraded"
+    if os.environ.get("STUDIO_MC_ENABLED", "1") != "0" and Path(
+        os.environ.get("STUDIO_MC_HOME", r"C:\Users\24688\dev\MediaCrawler")
+    ).exists():
+        try:
+            items = await asyncio.to_thread(_mc_search, primary, count)
+            search_source = "mediacrawler"
+        except Exception:
+            items = []
+    # 降级：DTK 批量解析分享链接（无搜索能力，仅当 links 提供时有效）
+    if not items:
+        try:
+            items = await dtk.search(primary, count)
+        except Exception:
+            items = []
+    report = await analytics.analyze(
         "keywords", {"keyword": primary, "keywords": raw, "items": items}
     )
+    if items and search_source == "mediacrawler":
+        report["search_source"] = "mediacrawler"
+        report["search_items"] = items
+    return report
 
 
 async def h_generate_script(p: dict[str, Any]) -> dict[str, Any]:

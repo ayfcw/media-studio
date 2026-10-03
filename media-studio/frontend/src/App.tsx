@@ -5,7 +5,7 @@ import {
   Tag, Typography, Upload, message,
 } from 'antd'
 import {
-  AimOutlined, AppstoreOutlined, CloudUploadOutlined, DashboardOutlined,
+  AimOutlined, AppstoreOutlined, BookOutlined, CloudUploadOutlined, DashboardOutlined,
   DeleteOutlined, FileTextOutlined, InboxOutlined, PlayCircleOutlined, ReloadOutlined,
   SettingOutlined,
 } from '@ant-design/icons'
@@ -503,6 +503,31 @@ function ArchivePanel() {
   )
 }
 
+// ==================== 知识库（AnythingLLM 等外部 RAG） ====================
+function KbPage() {
+  const [url, setUrl] = useState<string | null>(null)
+  const load = () => api.getSettings().then((s) => setUrl(s.kb?.url || '')).catch(() => undefined)
+  useEffect(() => { load() }, [])
+
+  if (!url) {
+    return (
+      <Alert type="info" showIcon style={{ maxWidth: 640 }} message="知识库还未配置"
+        description="到「系统设置 → 知识库」填入知识库服务地址（如本地部署的 AnythingLLM：http://127.0.0.1:3001），保存后即可在这里直接打开使用。" />
+    )
+  }
+  return (
+    <>
+      <Space style={{ marginBottom: 12 }}>
+        <Button type="primary" icon={<BookOutlined />} onClick={() => window.open(url, '_blank')}>
+          新窗口打开知识库
+        </Button>
+        <Text type="secondary">地址：{url} · 上传运营文档后即可对话式问答</Text>
+      </Space>
+      <iframe src={url} title="知识库" style={{ width: '100%', height: 'calc(100vh - 160px)', border: '1px solid #eee', borderRadius: 8 }} />
+    </>
+  )
+}
+
 // ==================== 系统设置 ====================
 function SettingsPanel() {
   const [form] = Form.useForm()
@@ -575,6 +600,15 @@ function SettingsPanel() {
           <Form.Item name={['dtk', 'api_key']} label="DTK API Key"
             extra="在 DTK 控制台 http://127.0.0.1:8000 的 API Keys 页创建；留空表示不修改">
             <Input.Password placeholder="dtk_..." autoComplete="new-password" />
+          </Form.Item>
+        </Form>
+      </Card>
+      <Card title="知识库（AnythingLLM 等 RAG 服务）" style={{ marginBottom: 16 }}
+        extra={cfg.kb?.url ? <Tag color="green">已配置</Tag> : <Tag>未配置</Tag>}>
+        <Form form={form} layout="vertical">
+          <Form.Item name={['kb', 'url']} label="知识库地址"
+            extra="例如本地部署的 AnythingLLM：http://127.0.0.1:3001；配置后左侧「知识库」页可直接打开，上传运营文档即可对话问答">
+            <Input placeholder="http://127.0.0.1:3001" />
           </Form.Item>
         </Form>
       </Card>

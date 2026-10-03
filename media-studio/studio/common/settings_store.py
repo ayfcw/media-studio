@@ -79,6 +79,7 @@ def public_settings() -> dict[str, Any]:
     llm = s.get("llm", {})
     feishu = s.get("feishu", {})
     dtk = s.get("dtk", {})
+    kb = s.get("kb", {})
     return {
         "llm": {
             "base_url": llm.get("base_url"),
@@ -91,5 +92,8 @@ def public_settings() -> dict[str, Any]:
         },
         "dtk": {
             "api_key_configured": bool(dtk.get("api_key")),
+        },
+        "kb": {
+            "url": kb.get("url"),  # 知识库（如 AnythingLLM）的访问地址，非敏感
         },
     }

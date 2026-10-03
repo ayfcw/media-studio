@@ -38,6 +38,7 @@ class SettingsBody(BaseModel):
     llm: dict[str, Any] | None = None
     feishu: dict[str, Any] | None = None
     dtk: dict[str, Any] | None = None
+    kb: dict[str, Any] | None = None
 
 
 @app.on_event("startup")

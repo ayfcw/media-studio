@@ -51,6 +51,7 @@ export interface Settings {
   llm?: { base_url?: string; model?: string; api_key_configured?: boolean }
   feishu?: { app_id?: string; app_secret_configured?: boolean }
   dtk?: { api_key_configured?: boolean }
+  kb?: { url?: string }
 }
 
 export interface MaterialItem {

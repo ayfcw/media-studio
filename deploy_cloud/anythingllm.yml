@@ -1,0 +1,16 @@
+# 自媒体平台 · 知识库（AnythingLLM）本地部署
+services:
+  anythingllm:
+    image: ghcr.io/mintplex-labs/anything-llm:latest
+    container_name: anythingllm
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      STORAGE_DIR: "/app/server/storage"
+    volumes:
+      - anythingllm_storage:/app/server/storage
+      - anythingllm_uploads:/app/server/storage/documents
+volumes:
+  anythingllm_storage:
+  anythingllm_uploads:
