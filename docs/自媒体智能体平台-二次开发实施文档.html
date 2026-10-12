@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>自媒体智能体平台 · 二次开发实施文档（AI 可执行版）</title>
+<style>
+  :root{
+    --bg:#f4f6f8; --panel:#ffffff; --ink:#1f2329; --sub:#57606a; --line:#e3e8ee;
+    --blue:#1a5bff; --green:#0a7d3e; --purple:#7c3aed; --orange:#b45309; --red:#c2255c;
+    --code-bg:#0f172a; --code-ink:#e2e8f0;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;line-height:1.7;font-size:15px;}
+  a{color:var(--blue);text-decoration:none;} a:hover{text-decoration:underline;}
+
+  /* 布局 */
+  .wrap{display:flex;max-width:1280px;margin:0 auto;gap:24px;padding:24px 16px;}
+  nav.side{flex:0 0 260px;position:sticky;top:16px;align-self:flex-start;max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 12px;font-size:13.5px;}
+  nav.side .t{font-weight:700;margin-bottom:8px;color:var(--ink);}
+  nav.side a{display:block;padding:4px 8px;border-radius:6px;color:var(--sub);}
+  nav.side a:hover{background:#eef3ff;color:var(--blue);text-decoration:none;}
+  nav.side a.l2{padding-left:20px;}
+  main{flex:1;min-width:0;}
+
+  /* 内容 */
+  section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:28px 32px;margin-bottom:20px;}
+  h1{font-size:26px;margin:0 0 4px;}
+  h2{font-size:21px;border-left:5px solid var(--blue);padding-left:12px;margin:40px 0 16px;}
+  h2.step{border-left-color:var(--green);}
+  h3{font-size:17px;margin:28px 0 10px;color:#111;}
+  h4{font-size:15px;margin:20px 0 8px;}
+  p{margin:8px 0;}
+  ul,ol{margin:8px 0;padding-left:24px;}
+  li{margin:4px 0;}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px;}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;}
+  th{background:#f0f4fa;font-weight:700;}
+  code{font-family:Consolas,"Courier New",monospace;background:#eef1f5;border-radius:4px;padding:1px 6px;font-size:13px;}
+  pre{background:var(--code-bg);color:var(--code-ink);border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.6;}
+  pre code{background:none;color:inherit;padding:0;font-size:13px;}
+  .tag{display:inline-block;font-size:12px;border-radius:4px;padding:1px 8px;margin-right:6px;font-weight:600;}
+  .tag.blue{background:#eef3ff;color:var(--blue);} .tag.green{background:#eef6ef;color:var(--green);}
+  .tag.purple{background:#f6eefc;color:var(--purple);} .tag.orange{background:#fef4e6;color:var(--orange);}
+  .tag.red{background:#fdeef3;color:var(--red);}
+  .note{border-radius:8px;padding:10px 14px;margin:12px 0;font-size:14px;}
+  .note.ok{background:#eef6ef;border-left:4px solid var(--green);}
+  .note.warn{background:#fef4e6;border-left:4px solid var(--orange);}
+  .note.danger{background:#fdeef3;border-left:4px solid var(--red);}
+  .note.info{background:#eef3ff;border-left:4px solid var(--blue);}
+  .ac{background:#f0f7ff;border:1px solid #cfe3ff;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:14px;}
+  .ac b{color:var(--blue);}
+  .check{list-style:none;padding-left:0;}
+  .check li{padding-left:28px;position:relative;margin:6px 0;}
+  .check li:before{content:"✔";position:absolute;left:4px;color:var(--green);font-weight:700;}
+  .kbd{font-family:Consolas,monospace;background:#eef1f5;border:1px solid #d4d9e0;border-radius:4px;padding:0 6px;font-size:13px;}
+  .pill{display:inline-block;background:#eef1f5;border-radius:20px;padding:1px 10px;font-size:12.5px;color:var(--sub);margin-right:6px;}
+  .hero{background:linear-gradient(135deg,#1a5bff 0%,#7c3aed 100%);color:#fff;border:none;border-radius:14px;}
+  .hero h1{color:#fff;} .hero .sub{opacity:.92;}
+  .toc-mobile{display:none;}
+  @media (max-width:960px){
+    .wrap{flex-direction:column;padding:12px;}
+    nav.side{display:none;}
+    section{padding:18px 14px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="side">
+  <div class="t">📑 目录</div>
+  <a href="#s0">0. 给 AI 的执行者说明</a>
+  <a href="#s1">1. 项目概述与目标</a>
+  <a href="#s2">2. 选型清单与技术栈</a>
+  <a href="#s3">3. 总体架构</a>
+  <a href="#s4">4. 目录与端口规划</a>
+  <a href="#s5">5. Step 1 · 环境准备</a>
+  <a href="#s6">6. Step 2 · 采集层 DTK v5</a>
+  <a href="#s7">7. Step 3 · 小红书采集(可选)</a>
+  <a href="#s8">8. Step 4 · 生成层 MPT</a>
+  <a href="#s9">9. Step 5 · AI 分析引擎(自建)</a>
+  <a href="#s10">10. Step 6 · 编排网关 REST API</a>
+  <a href="#s10b">10.5 并行/串行编排策略(给子智能体)</a>
+  <a href="#s11">11. Step 7 · MCP Server(自建)</a>
+  <a href="#s12">12. Step 8 · 飞书表格同步</a>
+  <a href="#s13">13. Step 9 · 前端 UI 融合</a>
+  <a href="#s14">14. 端到端验收清单</a>
+  <a href="#s15">15. 安全与合规</a>
+  <a href="#s16">附录 A · DTK 接口速查</a>
+  <a href="#s17">附录 B · MPT 接口速查</a>
+  <a href="#s18">附录 C · 提示词模板</a>
+  <a href="#s19">附录 D · 环境变量清单</a>
+  <a href="#s20">附录 E · 上游真实代码核对与融合改造</a>
+</nav>
+
+<main>
+
+<section class="hero">
+  <h1>自媒体智能体平台 · 二次开发实施文档</h1>
+  <div class="sub">基于开源项目融合（DTK + XHS + MoneyPrinterTurbo + 自建 AI 引擎），面向 AI 逐步执行的完整实施手册 · v1.0</div>
+  <div style="margin-top:10px;">
+    <span class="pill">📅 2026-09-28</span>
+    <span class="pill">🖥 目标环境 Windows 10+</span>
+    <span class="pill">🧩 技术栈 Python 3.12 / FastAPI / Docker</span>
+    <span class="pill">🤖 含 REST API + MCP 接口</span>
+  </div>
+</section>
+
+<section id="s0">
+  <h2>0. 给 AI 执行者（Agent）的说明</h2>
+  <p>本文档是给 <b>AI 编程 Agent</b>（如 Claude Code、Cursor、豆包、OpenClaw 等）和开发工程师共同使用的手册。执行规则如下：</p>
+  <ul>
+    <li><b>按 Step 顺序执行</b>：每章末尾有「✅ 验收标准」，只有全部通过才进入下一步；失败时先读错误信息，修复后重跑该步。</li>
+    <li><b>命令环境</b>：本机为 <b>Windows + PowerShell</b>。文档中的命令均给出 PowerShell 写法；PowerShell 禁止用 <span class="kbd">&&</span> 串联命令，多步操作请拆行执行。</li>
+    <li><b>路径注意</b>：MoneyPrinterTurbo 官方要求项目路径<b>不含中文/空格/特殊字符</b>（如 <span class="kbd">C:\Users\24688\Desktop\自动化剪辑</span> 含中文，建议其代码克隆到 <span class="kbd">C:\dev\</span> 下）。</li>
+    <li><b>API Key</b>：文档中出现的 <span class="kbd">YOUR_...</span> 均为占位符，需由用户提供后替换。</li>
+    <li><b>可自动化</b>：本系统完成后暴露两层自动化入口——① <b>编排网关 REST API</b>（Step 6）供任何程序调用；② <b>MCP Server</b>（Step 7）供 AI Agent 直接以工具方式调用。</li>
+    <li><b>合规红线</b>：采集功能仅用于学习/自用数据研究；DTK 与 XHS 均有限制条款，商用需另行评估（见 §15）。</li>
+    <li><b>并行 / 串行</b>：开发阶段与运行时哪些任务可派子智能体并行、哪些必须串行，见「Step 6.5 任务并行与串行编排策略」；并行时必须遵守并发上限、统一输出契约和失败隔离。</li>
+  </ul>
+  <div class="note info">💡 <b>给 Agent 的速读路径</b>：先读 §1–§4 理解架构 → 按 §5–§13 的 Step 逐步实现 → 每步执行「验收标准」→ 完成后跑 §14 端到端验收。附录 A/B/C 是接口与提示词参考，实现对应模块时查阅。</div>
+</section>
+
+<section id="s1">
+  <h2>1. 项目概述与目标</h2>
+  <h3>1.1 项目是什么</h3>
+  <p>构建一个对标「一木AI产品」的<b>自媒体智能体工作台</b>：用户粘贴一条视频/博主链接或关键词，系统自动完成<b>数据采集 → AI 拆解分析 → 文案生成 → 素材沉淀（飞书表格）</b>的完整闭环，并支持一键生成短视频。</p>
+  <h3>1.2 核心能力清单（对标一木 6 大智能体）</h3>
+  <table>
+    <tr><th>#</th><th>能力</th><th>实现方式</th><th>数据来源/引擎</th></tr>
+    <tr><td>1</td><td>爆款视频拆解</td><td>链接 → DTK 采集 → LLM 拆解</td><td>DTK + AI 引擎</td></tr>
+    <tr><td>2</td><td>博主对标拆解</td><td>博主主页 → 批量采集作品 → LLM 归纳打法</td><td>DTK + AI 引擎</td></tr>
+    <tr><td>3</td><td>账号复盘诊断</td><td>导入自己账号数据 → LLM 反推卡点+建议</td><td>CSV/飞书导入 + AI 引擎</td></tr>
+    <tr><td>4</td><td>关键词找爆款</td><td>关键词 → 搜索采集 → 拆流量结构 → 复刻建议</td><td>DTK 搜索 + AI 引擎</td></tr>
+    <tr><td>5</td><td>原创爆款文案生成</td><td>选题/开头类型 → 生成文案</td><td>AI 引擎（复用 MPT LLM 链路）</td></tr>
+    <tr><td>6</td><td>仿写三件套</td><td>仿结构 / 提炼改写 / 去重</td><td>AI 引擎</td></tr>
+    <tr><td>7</td><td>一键成片</td><td>文案 → 配音/素材/字幕/合成</td><td>MoneyPrinterTurbo</td></tr>
+    <tr><td>8</td><td>素材库沉淀</td><td>采集+拆解结果入库、飞书同步</td><td>PostgreSQL/SQLite + 飞书 API</td></tr>
+  </table>
+  <h3>1.3 成功标准（MVP）</h3>
+  <ol>
+    <li>粘贴任意抖音/TikTok 链接 → 返回结构化拆解报告（钩子、结构、节奏、数据、复刻建议）。</li>
+    <li>输入博主主页链接 → 返回对标分析报告。</li>
+    <li>输入关键词 → 返回爆款视频列表 + 流量结构分析。</li>
+    <li>输入选题 → 生成爆款风格文案 → 可选一键生成短视频。</li>
+    <li>所有结果可查询历史并同步到飞书多维表格。</li>
+    <li>AI Agent 可通过 MCP 工具直接完成以上全部操作。</li>
+  </ol>
+</section>
+
+<section id="s2">
+  <h2>2. 选型清单与技术栈</h2>
+  <table>
+    <tr><th>层</th><th>组件</th><th>项目/方案</th><th>协议</th><th>技术栈</th><th>端口</th><th>可商用</th></tr>
+    <tr><td>采集</td><td>抖音/TikTok 数据 API</td><td><b>Douyin_TikTok_Download_API v5</b>（Evil0ctal）</td><td><span class="tag green">Apache-2.0</span></td><td>Python 3.12 · FastAPI · PostgreSQL · React</td><td>8000</td><td>✅</td></tr>
+    <tr><td>采集</td><td>小红书采集（可选）</td><td><b>XHS-Downloader</b>（JoeanAmier）</td><td><span class="tag orange">GPL-3.0</span></td><td>Python · Requests</td><td>独立进程</td><td>⚠️ 独立进程调用</td></tr>
+    <tr><td>生成</td><td>文案/配音/素材/成片</td><td><b>MoneyPrinterTurbo</b>（harry0703）</td><td><span class="tag green">MIT</span></td><td>Python 3.11+ · FastAPI · Streamlit</td><td>8080 / 8501</td><td>✅</td></tr>
+    <tr><td>分析</td><td>爆款拆解/复盘/文案提示词</td><td><b>自建 AI 分析引擎</b>（本仓库 studio/analytics）</td><td>自有</td><td>Python · FastAPI · OpenAI 兼容 LLM</td><td>8100</td><td>—</td></tr>
+    <tr><td>编排</td><td>统一网关/任务调度</td><td><b>自建 studio-gateway</b></td><td>自有</td><td>Python · FastAPI · SQLite/PostgreSQL</td><td>8200</td><td>—</td></tr>
+    <tr><td>自动化</td><td>AI Agent 工具入口</td><td><b>自建 studio-mcp</b>（FastMCP, streamable-http）</td><td>自有</td><td>Python · MCP SDK</td><td>8300</td><td>—</td></tr>
+    <tr><td>前端</td><td>统一控制台</td><td><b>自建 frontend</b>（React + Vite）</td><td>自有</td><td>TypeScript · React 19</td><td>5173</td><td>—</td></tr>
+  </table>
+  <div class="note warn">⚠️ <b>选型说明</b>：不采用 MediaCrawler（功能虽最强）——其授权为「非商用学习许可」，商用二次开发有协议风险，且作者将高级能力收敛至付费 Pro 版。DTK v5 自带 <b>REST API（93 个操作）+ MCP Server + CLI</b>，是目前采集层自动化能力最完整的合规开源选择。</div>
+  <h3>2.1 为什么这样融合（技术可行性）</h3>
+  <ul>
+    <li><b>统一语言</b>：DTK、MPT、自建模块全部为 <b>Python + FastAPI</b>，可共享依赖与调用范式。</li>
+    <li><b>HTTP 解耦</b>：各组件独立进程/容器，通过 REST API 通信，任一组件的平台接口失效不影响整体。</li>
+    <li><b>自动化入口现成</b>：DTK v5 自带 MCP（/mcp），MPT 自带 REST API + 官方 AI Skill；自建层只需做「编排 + 业务提示词」。</li>
+    <li><b>成本可控</b>：LLM 用 DeepSeek 等 OpenAI 兼容 API（约 ¥1–2/百万 token）；TTS 用 MPT 内置 Edge TTS（免费）；素材用 Pexels/Pixabay（免费）。</li>
+  </ul>
+</section>
+
+<section id="s3">
+  <h2>3. 总体架构</h2>
+  <h3>3.1 分层架构图</h3>
+  <svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;background:#fbfcfe;border:1px solid #e3e8ee;border-radius:10px;">
+    <!-- 用户/AI -->
+    <rect x="20" y="20" width="180" height="64" rx="10" fill="#eef3ff" stroke="#1a5bff"/>
+    <text x="110" y="46" text-anchor="middle" font-size="14" font-weight="700" fill="#1a5bff">用户 / AI Agent</text>
+    <text x="110" y="66" text-anchor="middle" font-size="11" fill="#57606a">浏览器 UI · MCP 工具 · REST 调用</text>
+
+    <!-- 入口层 -->
+    <rect x="250" y="20" width="400" height="110" rx="12" fill="#fff" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="450" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="#7c3aed">入口层 · studio（自建）</text>
+    <rect x="266" y="52" width="116" height="34" rx="6" fill="#f6eefc" stroke="#d8c4f5"/>
+    <text x="324" y="73" text-anchor="middle" font-size="11.5" fill="#7c3aed">Frontend UI</text>
+    <rect x="392" y="52" width="116" height="34" rx="6" fill="#f6eefc" stroke="#d8c4f5"/>
+    <text x="450" y="73" text-anchor="middle" font-size="11.5" fill="#7c3aed">Gateway API :8200</text>
+    <rect x="518" y="52" width="116" height="34" rx="6" fill="#f6eefc" stroke="#d8c4f5"/>
+    <text x="576" y="73" text-anchor="middle" font-size="11.5" fill="#7c3aed">MCP Server :8300</text>
+    <text x="450" y="110" text-anchor="middle" font-size="11" fill="#57606a">任务调度 · 认证 · 数据聚合</text>
+
+    <!-- 业务层 -->
+    <rect x="250" y="160" width="400" height="110" rx="12" fill="#fff" stroke="#0a7d3e" stroke-width="1.5"/>
+    <text x="450" y="182" text-anchor="middle" font-size="13" font-weight="700" fill="#0a7d3e">业务层</text>
+    <rect x="266" y="192" width="172" height="58" rx="6" fill="#eef6ef" stroke="#bfe3c9"/>
+    <text x="352" y="216" text-anchor="middle" font-size="11.5" fill="#0a7d3e">AI 分析引擎 :8100</text>
+    <text x="352" y="234" text-anchor="middle" font-size="10.5" fill="#57606a">拆解/对标/复盘/仿写提示词</text>
+    <rect x="448" y="192" width="186" height="58" rx="6" fill="#eef6ef" stroke="#bfe3c9"/>
+    <text x="541" y="216" text-anchor="middle" font-size="11.5" fill="#0a7d3e">MoneyPrinterTurbo :8080</text>
+    <text x="541" y="234" text-anchor="middle" font-size="10.5" fill="#57606a">文案/配音/素材/合成</text>
+
+    <!-- 采集层 -->
+    <rect x="250" y="300" width="400" height="110" rx="12" fill="#fff" stroke="#b45309" stroke-width="1.5"/>
+    <text x="450" y="322" text-anchor="middle" font-size="13" font-weight="700" fill="#b45309">采集层</text>
+    <rect x="266" y="332" width="172" height="58" rx="6" fill="#fef4e6" stroke="#f3cf9c"/>
+    <text x="352" y="356" text-anchor="middle" font-size="11.5" fill="#b45309">DTK v5 :8000</text>
+    <text x="352" y="374" text-anchor="middle" font-size="10.5" fill="#57606a">抖音/TikTok · REST+MCP · PostgreSQL</text>
+    <rect x="448" y="332" width="186" height="58" rx="6" fill="#fef4e6" stroke="#f3cf9c"/>
+    <text x="541" y="356" text-anchor="middle" font-size="11.5" fill="#b45309">XHS-Downloader（可选）</text>
+    <text x="541" y="374" text-anchor="middle" font-size="10.5" fill="#57606a">小红书作品/笔记采集</text>
+
+    <!-- 存储 -->
+    <rect x="250" y="440" width="400" height="56" rx="12" fill="#fff" stroke="#c2255c" stroke-width="1.5"/>
+    <text x="450" y="462" text-anchor="middle" font-size="13" font-weight="700" fill="#c2255c">存储层</text>
+    <text x="450" y="482" text-anchor="middle" font-size="11.5" fill="#57606a">PostgreSQL（DTK 归档）+ SQLite/MySQL（studio 业务库）+ 飞书多维表格（对外沉淀）</text>
+
+    <!-- 连线 -->
+    <g stroke="#94a3b8" stroke-width="1.5" fill="none">
+      <line x1="200" y1="52" x2="250" y2="52"/>
+      <line x1="576" y1="86" x2="576" y2="160"/>
+      <line x1="450" y1="130" x2="352" y2="192"/>
+      <line x1="450" y1="130" x2="541" y2="192"/>
+      <line x1="352" y1="250" x2="352" y2="332"/>
+      <line x1="541" y1="250" x2="541" y2="332"/>
+      <line x1="450" y1="410" x2="450" y2="440"/>
+      <line x1="352" y1="390" x2="352" y2="440"/>
+      <line x1="541" y1="390" x2="541" y2="440"/>
+    </g>
+    <g stroke="#1a5bff" stroke-width="1.2" fill="none" stroke-dasharray="5,4">
+      <line x1="266" y1="70" x2="250" y2="70"/>
+      <line x1="660" y1="52" x2="700" y2="52"/>
+      <text x="700" y="48" font-size="10.5" fill="#1a5bff">DTK 自带 MCP /mcp</text>
+    </g>
+  </svg>
+  <div class="note info">💡 <b>数据流（用户视角）</b>：粘贴链接 → Gateway 创建任务 → 调 DTK 采集 → 调 AI 引擎拆解 → 结果入库 → 前端展示/飞书同步；需要成片时 → 调 MPT 生成视频。</div>
+
+  <h3>3.2 组件通信契约</h3>
+  <table>
+    <tr><th>调用方</th><th>→ 目标</th><th>协议</th><th>说明</th></tr>
+    <tr><td>Gateway / MCP</td><td>DTK :8000</td><td>REST /api/v1/* 或自带 MCP</td><td>需 DTK API Key；异步任务返回 202+task_id，可 ?wait= 同步</td></tr>
+    <tr><td>Gateway / MCP</td><td>AI 引擎 :8100</td><td>REST /analyze/*</td><td>内网调用，JSON 结构化输出</td></tr>
+    <tr><td>Gateway / MCP</td><td>MPT :8080</td><td>REST /api/v1/*</td><td>服务端调用不受 CORS 限制；也可用其官方 AI Skill</td></tr>
+    <tr><td>Gateway</td><td>飞书开放平台</td><td>HTTPS API</td><td>写入多维表格，需 app_id/app_secret</td></tr>
+    <tr><td>AI Agent</td><td>studio-mcp :8300</td><td>MCP (streamable-http)</td><td>对外自动化主入口</td></tr>
+  </table>
+</section>
+
+<section id="s4">
+  <h2>4. 目录与端口规划</h2>
+  <h3>4.1 推荐目录结构</h3>
+  <pre><code>media-studio/                          # 项目根（英文路径，避开中文/空格）
+├─ docker/                             # DTK v5 Compose（clone 自 Evil0ctal 仓库）
+├─ xhs/                                # XHS-Downloader（可选，独立进程）
+├─ moneyprinter/                       # MoneyPrinterTurbo（clone 自 harry0703 仓库）
+├─ studio/
+│  ├─ analytics/                       # AI 分析引擎（自建）
+│  │  ├─ app.py                        # FastAPI 入口 :8100
+│  │  ├─ prompts/                      # 提示词模板（§附录 C）
+│  │  │  ├─ breakdown.md               # 爆款拆解
+│  │  │  ├─ blogger.md                 # 博主对标
+│  │  │  ├─ review.md                  # 账号复盘
+│  │  │  ├─ keywords.md                # 关键词找爆款
+│  │  │  └─ rewrite.md                 # 仿写三件套
+│  │  ├─ llm.py                        # LLM 客户端（OpenAI 兼容）
+│  │  └─ schemas.py                    # Pydantic 输出模型
+│  ├─ gateway/                         # 编排网关（自建）
+│  │  ├─ app.py                        # FastAPI 入口 :8200
+│  │  ├─ tasks.py                      # 任务状态机/队列
+│  │  ├─ clients/
+│  │  │  ├─ dtk.py                     # DTK REST 客户端
+│  │  │  ├─ mpt.py                     # MPT REST 客户端
+│  │  │  └─ feishu.py                  # 飞书多维表格客户端
+│  │  └─ db.py                         # SQLite/PostgreSQL 模型
+│  ├─ mcp/                             # MCP Server（自建）
+│  │  └─ server.py                     # FastMCP 入口 :8300
+│  └─ config.example.toml              # 统一配置
+├─ frontend/                           # React + Vite 控制台（自建）
+│  ├─ src/pages/                       # 链接分析/博主/素材库/成片/任务中心
+│  └─ vite.config.ts                   # dev proxy → :8200
+└─ docs/
+   └─ 本文件
+</code></pre>
+  <h3>4.2 端口总表</h3>
+  <table>
+    <tr><th>端口</th><th>服务</th><th>访问入口</th></tr>
+    <tr><td>8000</td><td>DTK v5（采集）</td><td>/docs（Swagger）· /mcp（自带MCP）· /api/v1/*</td></tr>
+    <tr><td>8088</td><td>MPT API</td><td>/docs（本机 8080 被其他项目占用，故改 8088）</td></tr>
+    <tr><td>8501</td><td>MPT WebUI</td><td>Streamlit 管理界面（可选关闭）</td></tr>
+    <tr><td>8100</td><td>studio-analytics</td><td>/analyze/*</td></tr>
+    <tr><td>8200</td><td>studio-gateway</td><td>/api/v1/* · /docs</td></tr>
+    <tr><td>8300</td><td>studio-mcp</td><td>/mcp（streamable-http）· /mcp-guide</td></tr>
+    <tr><td>5173</td><td>frontend</td><td>React 控制台（dev）</td></tr>
+  </table>
+</section>
+
+<section id="s5">
+  <h2 class="step">5. Step 1 · 环境准备</h2>
+  <h3>5.1 前置依赖</h3>
+  <table>
+    <tr><th>依赖</th><th>版本要求</th><th>用途</th></tr>
+    <tr><td>Docker Desktop</td><td>最新稳定版</td><td>运行 DTK v5（PostgreSQL/Redis/API 三容器）</td></tr>
+    <tr><td>Python</td><td>3.12（MPT 需 3.11+）</td><td>运行 MPT 与自建服务</td></tr>
+    <tr><td>uv（可选）</td><td>最新</td><td>MPT 与自建服务的依赖管理</td></tr>
+    <tr><td>Node.js</td><td>20 LTS+</td><td>前端控制台（Step 9）</td></tr>
+    <tr><td>Git</td><td>最新</td><td>克隆仓库</td></tr>
+  </table>
+  <h3>5.2 安装检查（PowerShell）</h3>
+  <pre><code>docker --version
+python --version
+git --version
+node --version</code></pre>
+  <div class="ac"><b>✅ 验收标准</b>：上述四条命令均输出版本号，无「无法识别」错误。</div>
+  <div class="note warn">⚠️ Windows 上 Docker 需启用 WSL2 后端；如 <span class="kbd">docker</span> 命令报错，请先安装并启动 Docker Desktop 后重开终端。</div>
+</section>
+
+<section id="s6">
+  <h2 class="step">6. Step 2 · 部署采集层 DTK v5</h2>
+  <p>DTK v5 是采集层的核心，自带 <b>REST API + MCP + CLI + React 控制台</b>，采集数据自动归档到 PostgreSQL。</p>
+  <h3>6.1 克隆与配置</h3>
+  <pre><code>cd C:\dev
+git clone https://github.com/Evil0ctal/Douyin_TikTok_Download_API.git
+cd Douyin_TikTok_Download_API
+
+# 生成 .env（含随机密钥）
+$env:DTK_SECRET = openssl rand -base64 48</code></pre>
+  <p>创建 <span class="kbd">.env</span> 文件：</p>
+  <pre><code>DTK_SECRET_KEY=【上一步生成或自定长随机串】
+POSTGRES_PASSWORD=【自定强密码】
+REDIS_PASSWORD=【自定强密码】
+DTK_DATABASE_URL=postgresql+asyncpg://dtk:${POSTGRES_PASSWORD}@postgres:5432/dtk
+DTK_REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0</code></pre>
+  <h3>6.2 启动</h3>
+  <pre><code>docker compose -p dtk -f docker/compose.yml up -d
+# 查看初始化 token（用于创建第一个管理员）
+docker compose -p dtk -f docker/compose.yml logs api</code></pre>
+  <h3>6.3 初始化管理员与 API Key</h3>
+  <ol>
+    <li>浏览器打开 <span class="kbd">http://127.0.0.1:8000</span>，用日志中的 setup token 创建管理员账号。</li>
+    <li>在控制台 <b>API Keys</b> 页创建一把 API Key（建议 scope 选择 <span class="kbd">parse / archive / download</span> 相关权限），复制保存为 <span class="kbd">DTK_API_KEY</span>。</li>
+  </ol>
+  <h3>6.4 验证采集能力</h3>
+  <pre><code># 用 Swagger 或 curl 测试解析一条链接（换真实链接）
+curl -X POST "http://127.0.0.1:8000/api/v1/parse" ^
+  -H "Authorization: Bearer $env:DTK_API_KEY" ^
+  -H "Content-Type: application/json" ^
+  -d '{"url":"https://v.douyin.com/XXXXXX/"}'</code></pre>
+  <div class="note info">💡 DTK v5 的完整端点以 <span class="kbd">http://127.0.0.1:8000/docs</span>（Swagger，中英文）为准；它默认<b>异步</b>返回 <span class="kbd">202 + task_id</span>，加 <span class="kbd">?wait=true</span> 可同步等待结果。关键能力：parse 链接 / author profile / author posts / comments / download / watch。接口速查见<b>附录 A</b>。</div>
+  <div class="ac"><b>✅ 验收标准</b>：① 控制台可登录并看到身份池/任务日志；② 用真实抖音链接调用 parse 返回结构化作品数据（文案、点赞、评论数等）；③ API Key 创建成功。</div>
+</section>
+
+<section id="s7">
+  <h2 class="step">7. Step 3 · 小红书采集（可选模块）</h2>
+  <p>DTK v5 目前仅支持抖音/TikTok（v4 才含 Bilibili）。如需小红书数据，接入 XHS-Downloader 作为<b>独立进程</b>，通过本地脚本/HTTP 薄壳调用。</p>
+  <h3>7.1 部署（独立目录）</h3>
+  <pre><code>cd C:\dev
+git clone https://github.com/JoeanAmier/XHS-Downloader.git
+cd XHS-Downloader
+uv sync            # 或 pip install -r requirements.txt</code></pre>
+  <p>首次运行按提示扫码/填 Cookie 登录小红书。</p>
+  <h3>7.2 封装为可调用接口（推荐薄壳方案）</h3>
+  <pre><code># xhs/bridge.py —— 以子进程方式调用 XHS，输出 JSON，供 studio 使用
+import json, subprocess, sys
+def collect(url: str) -> dict:
+    r = subprocess.run(
+        [sys.executable, "-m", "XHSDownloader", "--url", url, "--output", "json"],
+        capture_output=True, text=True, timeout=180)
+    return json.loads(r.stdout)</code></pre>
+  <div class="note warn">⚠️ <b>GPL-3.0 合规提示</b>：XHS-Downloader 为 GPL 协议。以<b>独立进程/独立服务</b>方式调用（不把其代码并入自建仓库、不分发修改版）通常视为独立作品；若将代码直接复制进 studio 仓库合并分发，则整个仓库需按 GPL 开源。建议保持独立进程 + HTTP 调用边界。</div>
+  <div class="ac"><b>✅ 验收标准</b>：输入一条小红书笔记链接能返回标题/文案/点赞等结构化数据。</div>
+</section>
+
+<section id="s8">
+  <h2 class="step">8. Step 4 · 部署生成层 MoneyPrinterTurbo</h2>
+  <p>MPT 提供「主题 → 文案/配音/素材/字幕/成片」全流程，带完整 REST API 与官方 AI Skill，作为文案生成与成片引擎。</p>
+  <h3>8.1 克隆与配置（路径必须无中文/空格）</h3>
+  <pre><code>cd C:\dev
+git clone https://github.com/harry0703/MoneyPrinterTurbo.git
+cd MoneyPrinterTurbo
+uv sync</code></pre>
+  <p>首次启动自动生成 <span class="kbd">config.toml</span>；编辑填写：</p>
+  <pre><code>[llm_provider]        # 任选一家 OpenAI 兼容服务
+provider = "deepseek"  # 或 openai / moonshot / qwen / ollama ...
+api_key = "【你的 LLM Key】"
+base_url = "https://api.deepseek.com/v1"
+model = "deepseek-chat"
+
+[tts_provider]         # 免费方案
+provider = "edge"      # Edge TTS 免费、无需 Key</code></pre>
+  <h3>8.2 启动服务</h3>
+  <pre><code>uv run python main.py        # 启动 API :8080（文档在 /docs）
+uv run streamlit run webui/app.py   # 可选 WebUI :8501</code></pre>
+  <h3>8.3 验证 API</h3>
+  <pre><code>curl -X POST "http://127.0.0.1:8080/api/v1/videos" ^
+  -H "Content-Type: application/json" ^
+  -d '{"video_subject":"人工智能如何改变普通人生活","video_aspect":"9:16","video_concat_mode":"sequential"}'</code></pre>
+  <div class="note info">💡 MPT 关键信息：① 官方 AI Skill 文档 <span class="kbd">https://raw.githubusercontent.com/harry0703/MoneyPrinterTurbo/main/docs/skill/SKILL.md</span>——AI Agent（Claude Code 等）可直接读取后操作 MPT；② API 默认仅允许同源网页访问，若前端跨域调用需设置环境变量 <span class="kbd">CORS_ALLOWED_ORIGINS=http://localhost:5173</span>；③ 服务端调用（如 studio 网关）不受 CORS 限制。接口速查见<b>附录 B</b>。</div>
+  <div class="ac"><b>✅ 验收标准</b>：① /docs 可访问；② 调用 /api/v1/videos 能创建任务并最终生成视频文件；③ 使用免费 Edge TTS 配音成功。</div>
+</section>
+
+<section id="s9">
+  <h2 class="step">9. Step 5 · 自建 AI 分析引擎（差异化核心）</h2>
+  <p>这是开源没有、需要自己写的部分，也是产品护城河。职责：接收采集数据 → 用提示词 + LLM 输出结构化拆解/复盘/文案。</p>
+  <h3>9.1 创建服务</h3>
+  <pre><code>mkdir C:\dev\media-studio\studio\analytics
+cd C:\dev\media-studio\studio\analytics
+uv init --python 3.12
+uv add fastapi uvicorn openai pydantic</code></pre>
+  <h3>9.2 LLM 客户端（Key 运行时注入；未配置自动降级 Mock）</h3>
+  <pre><code># llm.py —— 不硬编码、不依赖启动时的环境变量
+from typing import Any
+import json
+from settings_store import get_llm_settings   # 见 §10.4，运行时从配置库读取
+
+MOCK = True   # 开发期开关；可由设置项 app.mock 控制
+
+def chat(system: str, user: str, json_mode: bool = True, model: str | None = None) -> Any:
+    s = get_llm_settings()                  # {base_url, api_key, model}
+    if MOCK or not s.get("api_key"):
+        return mock_result()                # 无 Key：返回样例 JSON，照样跑通链路
+    from openai import OpenAI
+    client = OpenAI(api_key=s["api_key"], base_url=s["base_url"])
+    resp = client.chat.completions.create(
+        model=model or s.get("model", "deepseek-chat"),
+        messages=[{"role": "system", "content": system},
+                  {"role": "user", "content": user}],
+        response_format={"type": "json_object"} if json_mode else None,
+        temperature=0.6,
+    )
+    return resp.choices[0].message.content
+
+def mock_result() -> str:
+    # 必须符合 §9.3 的 schema，供前端/网关先联调
+    return json.dumps(
+        {"title": "[示例]标题", "hook": "[示例]钩子分析",
+         "structure": [], "replicable_points": []}, ensure_ascii=False)</code></pre>
+  <div class="note info">🔑 <b>Key 全程可后置</b>：① 开发期 <code>MOCK=True</code> 用样例数据；② 也可接本地 <b>Ollama</b>（base_url=<code>http://localhost:11434/v1</code>，key 任意填，免费）；③ 系统上线后在前端「系统设置」页填入真实 Key（走 <code>PUT /api/v1/settings</code>，加密存库，不进代码库）。未配置 Key 时接口返回样例或友好提示，<b>绝不报错中断</b>。</div>
+  <h3>9.3 结构化输出模型（schemas.py 摘要）</h3>
+  <pre><code># schemas.py（Pydantic 字段示例，完整见代码仓库）
+from pydantic import BaseModel
+
+class BreakdownResult(BaseModel):
+    title: str                     # 视频标题
+    hook: str                      # 开头钩子分析
+    structure: list[str]           # 结构拆解（逐段）
+    rhythm: str                    # 节奏/句式特点
+    data: dict                     # 播放/点赞/评论等
+    audience: str                  # 目标人群画像
+    takeaways: list[str]           # 可复刻方法
+    replication_advice: str        # 复刻建议
+
+class BloggerAnalysis(BaseModel):
+    blogger: str
+    positioning: str               # 账号定位
+    content_matrix: list[dict]     # 内容矩阵（栏目/选题）
+    techniques: list[str]          # 常用钩子与技巧
+    growth_pattern: str
+    transferable: list[str]        # 可转用到自己账号的方法</code></pre>
+  <h3>9.4 FastAPI 入口（app.py 摘要）</h3>
+  <pre><code># app.py
+from fastapi import FastAPI
+from pydantic import BaseModel
+import llm, schemas, prompts
+
+app = FastAPI(title="studio-analytics", docs_url="/docs")
+
+class AnalyzeReq(BaseModel):
+    raw: dict          # DTK 采集到的作品/博主数据 JSON
+    kind: str          # breakdown | blogger | review | keywords | rewrite
+
+@app.post("/analyze")
+def analyze(req: AnalyzeReq):
+    system = prompts.load(req.kind)          # 从 prompts/*.md 读取
+    content = prompts.render(req.kind, req.raw)
+    out = llm.chat(system, content)
+    return {"ok": True, "kind": req.kind, "result": out}
+
+@app.get("/health")
+def health(): return {"status": "ok"}</code></pre>
+  <h3>9.5 提示词存放</h3>
+  <p>将附录 C 的 5 份提示词模板分别存入 <span class="kbd">prompts/</span>，要求：<b>输出必须是合法 JSON</b>、字段与 schemas 对齐、禁止编造未提供的数据。</p>
+  <div class="ac"><b>✅ 验收标准</b>：用一份真实采集数据 POST /analyze，返回合法 JSON 且字段完整；更换 kind 得到对应类型报告。</div>
+</section>
+
+<section id="s10">
+  <h2 class="step">10. Step 6 · 编排网关（统一 REST API）</h2>
+  <p>网关是<b>对外自动化主入口</b>：聚合采集→分析→生成→沉淀，管理任务状态机，统一鉴权。任何程序（前端、脚本、n8n、AI Agent 的 HTTP 工具）都通过它操作。</p>
+  <h3>10.1 创建服务</h3>
+  <pre><code>mkdir C:\dev\media-studio\studio\gateway
+cd C:\dev\media-studio\studio\gateway
+uv init --python 3.12
+uv add fastapi uvicorn httpx pydantic apscheduler</code></pre>
+  <h3>10.2 任务模型与状态机</h3>
+  <pre><code># db.py 摘要
+# Task: id | kind | status | input | result | error | created_at
+# status: pending → running → succeeded | failed
+# 实现：内存队列 + SQLite 持久化（起步够用）；量大后换 PostgreSQL</code></pre>
+  <h3>10.3 对外 REST API 设计（v1）</h3>
+  <table>
+    <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+    <tr><td>POST</td><td>/api/v1/tasks/analyze-link</td><td>拆解一条视频链接<br><span class="kbd">body: {"url": "...", "deep": true}</span></td></tr>
+    <tr><td>POST</td><td>/api/v1/tasks/analyze-blogger</td><td>博主对标分析<br><span class="kbd">body: {"url": "...", "post_limit": 20}</span></td></tr>
+    <tr><td>POST</td><td>/api/v1/tasks/search-keywords</td><td>关键词找爆款<br><span class="kbd">body: {"keyword": "副业", "count": 10}</span></td></tr>
+    <tr><td>POST</td><td>/api/v1/tasks/generate-script</td><td>生成爆款文案<br><span class="kbd">body: {"topic": "...", "style": "hook+故事+干货", "refs": []}</span></td></tr>
+    <tr><td>POST</td><td>/api/v1/tasks/generate-video</td><td>一键成片（转调 MPT）<br><span class="kbd">body: {"script": "...", "ratio": "9:16"}</span></td></tr>
+    <tr><td>POST</td><td>/api/v1/tasks/account-review</td><td>账号复盘诊断<br><span class="kbd">body: {"posts": [采集到的自己账号数据]}</span></td></tr>
+    <tr><td>GET</td><td>/api/v1/tasks/{task_id}</td><td>查询任务状态与结果（轮询用）</td></tr>
+    <tr><td>GET</td><td>/api/v1/archive</td><td>素材库查询 <span class="kbd">?platform=&keyword=&page=</span></td></tr>
+    <tr><td>GET</td><td>/api/v1/bloggers</td><td>博主库列表</td></tr>
+    <tr><td>POST</td><td>/api/v1/feishu/sync</td><td>同步到飞书多维表格 <span class="kbd">body: {"table_token": "..."}</span></td></tr>
+    <tr><td>GET</td><td>/api/v1/settings</td><td>读取系统设置（<b>Key 只回传是否已配置，永不回明文</b>）</td></tr>
+    <tr><td>PUT</td><td>/api/v1/settings</td><td>保存 LLM / 飞书 / 平台等配置（加密存库）<br><span class="kbd">body: {"llm": {"base_url":"...","api_key":"...","model":"..."}}</span></td></tr>
+    <tr><td>GET</td><td>/api/v1/health</td><td>健康检查（聚合各下游状态）</td></tr>
+  </table>
+  <h3>10.4 鉴权与凭据运行时管理</h3>
+  <p>网关对所有 <span class="kbd">/api/v1/*</span> 校验请求头 <span class="kbd">X-API-Key: 【GATEWAY_API_KEY】</span>。下游凭据（DTK_API_KEY、LLM Key、飞书凭据）<b>不必写死在环境变量</b>：可在「系统设置」页运行时填写，经加密后存于配置库；环境变量仅作为初始默认值。</p>
+  <pre><code># settings_store.py —— 凭据运行时读写（加密）
+from cryptography.fernet import Fernet
+import json, os
+
+_KEY = os.environ.get("SETTINGS_SECRET") or Fernet.generate_key()
+f = Fernet(_KEY)
+_store = "settings.json.enc"
+
+def save_settings(data: dict):
+    blob = f.encrypt(json.dumps(data, ensure_ascii=False).encode())
+    open(_store, "wb").write(blob)
+
+def load_settings() -> dict:
+    if not os.path.exists(_store): return {}
+    return json.loads(f.decrypt(open(_store,"rb").read()))
+
+def get_llm_settings() -> dict:
+    return load_settings().get("llm", {})
+
+def public_settings() -> dict:
+    # 给前端：只暴露 base_url/model 和"是否已填 Key"，绝不返回明文
+    s = load_settings().get("llm", {})
+    return {"base_url": s.get("base_url"), "model": s.get("model"),
+            "api_key_configured": bool(s.get("api_key"))}</code></pre>
+  <h3>10.5 analyze-link 任务实现伪码</h3>
+  <pre><code>async def run_analyze_link(task, payload):
+    # 1. 调 DTK 解析链接（?wait=true 同步拿结果）
+    post = await dtk.parse(payload["url"])
+    # 2. 调 AI 引擎拆解
+    report = await analytics.analyze({"raw": post, "kind": "breakdown"})
+    # 3. 入库 archive（供素材库查询）
+    archive.insert(platform="douyin", url=post.url, data=report)
+    # 4. 标记成功，返回报告
+    task.complete(report)</code></pre>
+  <div class="ac"><b>✅ 验收标准</b>：① 带正确 Key 调用 analyze-link 返回 task_id；② 轮询 /tasks/{id} 直到 succeeded 并拿到完整 JSON 报告；③ 无 Key 调用返回 401；④ /health 返回所有下游服务状态。</div>
+</section>
+
+<section id="s10b">
+  <h2 class="step">Step 6.5 · 任务并行与串行编排策略（给 AI 子智能体）</h2>
+  <p>本节明确告诉 AI：<b>哪些阶段可以派子智能体并行执行、哪些必须串行</b>。同时适用于「开发实施阶段」和「系统运行时任务」。</p>
+
+  <h3>0.1 最高判断规则（AI 先读这条）</h3>
+  <div class="note info">
+    🔑 <b>唯一判断标准：任务 B 的输入是否依赖任务 A 的输出？</b><br>
+    · <b>依赖</b>（B 需要 A 的结果才能开始）→ <b>必须串行</b>，禁止提前执行。<br>
+    · <b>不依赖</b>（输入相互独立、写不同资源、无顺序要求）→ <b>可以并行</b>，派子智能体 / 多 worker 同时执行。
+  </div>
+  <h3>0.2 并行执行的 4 条硬约束</h3>
+  <ol>
+    <li><b>限并发</b>：用 <code>asyncio.Semaphore</code> 控制并发数，遵守平台限流（DTK 演示站 30 次/10 秒；飞书写入约 100 次/分钟；LLM 按账户 RPM）。</li>
+    <li><b>统一契约</b>：并行子任务必须输出统一 JSON Schema（字段见 §9.3），否则无法聚合。</li>
+    <li><b>失败隔离</b>：单个子任务失败 <b>不拖垮整批</b>——try/except 收集错误，标记失败项，最后可单独重试失败项。</li>
+    <li><b>共享资源安全</b>：并行写库 / 用身份池要幂等（主键去重）或加锁，禁止多个子任务写同一条记录。</li>
+  </ol>
+
+  <h3>1. 开发实施阶段：哪些 Step 可并行、哪些串行</h3>
+  <table>
+    <tr><th>阶段</th><th>编排</th><th>能否派子智能体</th><th>原因 / 说明</th></tr>
+    <tr><td>Step 1 环境准备</td><td><b>串行</b>（最前置）</td><td>❌</td><td>所有后续步骤的前提</td></tr>
+    <tr><td>Step 2 / 3 / 4 部署 DTK · XHS · MPT</td><td><b>可并行</b></td><td>✅ 3 个子智能体各部署一个</td><td>三个服务相互独立、无依赖</td></tr>
+    <tr><td>Step 5 AI 分析引擎</td><td><b>可并行开发</b></td><td>✅ 1 个子智能体</td><td>仅依赖 LLM 配置，不依赖其他服务部署</td></tr>
+    <tr><td>Step 8 飞书同步模块</td><td><b>可并行开发</b></td><td>✅ 1 个子智能体</td><td>按字段 Schema 独立开发</td></tr>
+    <tr><td>Step 9 前端</td><td><b>可并行开发</b></td><td>✅ 1 个子智能体</td><td>前提：先冻结 §10.3 API 契约，前端按契约 + Mock 开发</td></tr>
+    <tr><td>Step 6 网关集成</td><td><b>必须串行</b>（在 2/4/5 之后）</td><td>❌ 集成点</td><td>网关要调用已存在的采集/分析/生成接口</td></tr>
+    <tr><td>Step 7 MCP Server</td><td><b>必须串行</b>（在网关之后）</td><td>❌</td><td>MCP 工具内部调用网关</td></tr>
+    <tr><td>§14 端到端联调验收</td><td><b>必须串行</b>（最后）</td><td>❌</td><td>验证整条链路，依赖全部模块就绪</td></tr>
+  </table>
+  <div class="note ok">✅ <b>开发阶段最优并行方案</b>：Step 1 完成后，先冻结 API 契约（§10.3），然后<b>同时派 6 个子智能体</b>：[部署DTK] [部署XHS] [部署MPT] [开发分析引擎] [开发飞书模块] [开发前端]；全部完成后，<b>串行</b>回到 Step 6 网关集成 → Step 7 MCP → 联调验收。这样关键路径最短。</div>
+
+  <h3>2. 系统运行时：任务内的并行 / 串行 DAG</h3>
+  <table>
+    <tr><th>业务任务</th><th>阶段编排（→ 串行 / ⇉ 并行）</th></tr>
+    <tr><td>analyze-link 单条拆解</td><td>采集 → AI 拆解 → 入库（<b>全程串行</b>，严格数据依赖）</td></tr>
+    <tr><td>analyze-blogger 博主对标</td><td>① 采集博主作品列表 → ② <b>⇉ 并行逐条拆解（map）</b> → ③ 归纳博主打法（reduce，串行）</td></tr>
+    <tr><td>search-keywords 关键词找爆款</td><td>① 关键词搜索 → ② <b>⇉ 并行逐条拆解</b> → ③ 汇总趋势与机会点（串行）</td></tr>
+    <tr><td>account-review 账号复盘</td><td>① 导入账号数据 → ② <b>⇉ 并行逐条诊断视频</b> → ③ 汇总账号诊断 + 行动建议（串行）</td></tr>
+    <tr><td>generate-video 单个成片</td><td>文案 → 配音 → 素材 → 字幕 → 合成（MPT 内部 <b>串行流水线</b>）</td></tr>
+    <tr><td>generate-video 批量成片</td><td><b>⇉ 多个独立主题并行提交 MPT</b>（受并发上限约束）</td></tr>
+    <tr><td>多平台采集</td><td><b>⇉ DTK / XHS 不同平台并行采集</b></td></tr>
+    <tr><td>飞书同步</td><td><b>必须在数据入库之后</b>（串行），批量写入按频率节流</td></tr>
+  </table>
+
+  <h3>2.1 并行 / 串行 DAG 示意图（以 analyze-blogger 为例：Map-Reduce）</h3>
+  <svg viewBox="0 0 900 300" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;background:#fbfcfe;border:1px solid #e3e8ee;border-radius:10px;">
+    <!-- 阶段1 串行采集 -->
+    <rect x="30" y="110" width="150" height="70" rx="10" fill="#fef4e6" stroke="#b45309" stroke-width="1.5"/>
+    <text x="105" y="140" text-anchor="middle" font-size="13" font-weight="700" fill="#b45309">① 串行</text>
+    <text x="105" y="160" text-anchor="middle" font-size="11" fill="#57606a">采集博主作品列表</text>
+
+    <!-- 阶段2 并行 map -->
+    <text x="380" y="40" text-anchor="middle" font-size="13" font-weight="700" fill="#1a5bff">② 并行 Map（子智能体/worker，受 Semaphore 限流）</text>
+    <g>
+      <rect x="280" y="60" width="200" height="34" rx="6" fill="#eef3ff" stroke="#1a5bff"/>
+      <text x="380" y="81" text-anchor="middle" font-size="11.5" fill="#1a5bff">子任务 · 拆解作品 1</text>
+      <rect x="280" y="104" width="200" height="34" rx="6" fill="#eef3ff" stroke="#1a5bff"/>
+      <text x="380" y="125" text-anchor="middle" font-size="11.5" fill="#1a5bff">子任务 · 拆解作品 2</text>
+      <rect x="280" y="148" width="200" height="34" rx="6" fill="#eef3ff" stroke="#1a5bff"/>
+      <text x="380" y="169" text-anchor="middle" font-size="11.5" fill="#1a5bff">子任务 · 拆解作品 3</text>
+      <rect x="280" y="192" width="200" height="34" rx="6" fill="#eef3ff" stroke="#1a5bff"/>
+      <text x="380" y="213" text-anchor="middle" font-size="11.5" fill="#1a5bff">子任务 · 拆解作品 N ...</text>
+    </g>
+
+    <!-- 阶段3 串行 reduce -->
+    <rect x="620" y="110" width="150" height="70" rx="10" fill="#f6eefc" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="695" y="140" text-anchor="middle" font-size="13" font-weight="700" fill="#7c3aed">③ 串行 Reduce</text>
+    <text x="695" y="160" text-anchor="middle" font-size="11" fill="#57606a">归纳博主打法报告</text>
+
+    <!-- 连线 -->
+    <g stroke="#94a3b8" stroke-width="1.5" fill="none">
+      <line x1="180" y1="145" x2="280" y2="77"/>
+      <line x1="180" y1="145" x2="280" y2="121"/>
+      <line x1="180" y1="145" x2="280" y2="165"/>
+      <line x1="180" y1="145" x2="280" y2="209"/>
+      <line x1="480" y1="77" x2="620" y2="145"/>
+      <line x1="480" y1="121" x2="620" y2="145"/>
+      <line x1="480" y1="165" x2="620" y2="145"/>
+      <line x1="480" y1="209" x2="620" y2="145"/>
+    </g>
+    <text x="230" y="260" font-size="11" fill="#57606a">规则：① 必须先于 ②（②需要作品列表）；② 内部全部并行；③ 必须等 ② 全部结束（含失败项收集）后执行。</text>
+  </svg>
+
+  <h3>3. 给 AI 的代码模式（直接复用）</h3>
+  <h4>3.1 通用并行执行器（带并发上限 + 失败隔离）</h4>
+  <pre><code># studio/gateway/parallel.py
+import asyncio
+
+async def map_parallel(items, worker, concurrency: int = 5):
+    """对 items 并行执行 worker，返回逐项结果，单项失败不影响整体。"""
+    sem = asyncio.Semaphore(concurrency)
+    async def _wrap(item):
+        async with sem:
+            try:
+                return {"ok": True, "item": item, "result": await worker(item)}
+            except Exception as e:
+                return {"ok": False, "item": item, "error": str(e)}
+    return await asyncio.gather(*[_wrap(i) for i in items])</code></pre>
+  <h4>3.2 analyze-blogger 的 Map-Reduce 编排</h4>
+  <pre><code>async def run_analyze_blogger(task, payload):
+    # ① 串行：分页采集博主作品（有顺序/翻页依赖，不能并行）
+    posts = await dtk.author_posts(payload["url"], limit=payload.get("post_limit", 20))
+    # ② 并行 Map：逐条拆解（互不依赖，限流 5 并发）
+    results = await map_parallel(
+        posts,
+        lambda p: analytics.analyze({"raw": p, "kind": "breakdown"}),
+        concurrency=5)
+    ok = [r["result"] for r in results if r["ok"]]
+    failed = [r["item"] for r in results if not r["ok"]]
+    # ③ 串行 Reduce：归纳博主整体打法
+    summary = await analytics.summarize_blogger(ok)
+    summary["failed_items"] = failed          # 暴露失败项，供后续重试
+    task.complete(summary)</code></pre>
+  <div class="note warn">⚠️ <b>禁止并行的情况（AI 自查）</b>：① 下游有限流且未做信号量；② 任务间共享同一可变记录；③ 后一步需要前一步聚合结果；④ MPT 单条视频内部各环节（其自身已串行编排，不要外部重复并行触发同一任务）。</div>
+  <div class="ac"><b>✅ 验收标准</b>：① 能说清每个业务任务的串/并行阶段；② 用 map_parallel 跑 analyze-blogger，N 条作品并发拆解、最终聚合成功；③ 故意让 1 个子任务失败，整批仍完成且 failed_items 正确记录；④ 并发数不超过设定上限（可日志验证）。</div>
+</section>
+
+<section id="s11">
+  <h2 class="step">11. Step 7 · 自建 MCP Server（AI 自动化主入口）</h2>
+  <p>MCP（Model Context Protocol）让 Claude Code、Cursor、豆包、OpenClaw 等 AI Agent 以「工具」方式直接操作本系统。采用 FastMCP + streamable-http 传输。</p>
+  <h3>11.1 创建服务</h3>
+  <pre><code>mkdir C:\dev\media-studio\studio\mcp
+cd C:\dev\media-studio\studio\mcp
+uv init --python 3.12
+uv add "mcp[fastmcp]" uvicorn httpx</code></pre>
+  <h3>11.2 工具清单（对外暴露给 AI）</h3>
+  <table>
+    <tr><th>工具名</th><th>输入</th><th>输出</th><th>对应网关接口</th></tr>
+    <tr><td><b>analyze_link</b></td><td>url, deep?</td><td>爆款拆解报告 JSON</td><td>POST /tasks/analyze-link</td></tr>
+    <tr><td><b>analyze_blogger</b></td><td>url, post_limit?</td><td>博主对标报告 JSON</td><td>POST /tasks/analyze-blogger</td></tr>
+    <tr><td><b>search_keywords</b></td><td>keyword, count?</td><td>爆款列表+流量结构</td><td>POST /tasks/search-keywords</td></tr>
+    <tr><td><b>generate_script</b></td><td>topic, style?, refs?</td><td>爆款文案（可含仿写三件套产物）</td><td>POST /tasks/generate-script</td></tr>
+    <tr><td><b>generate_video</b></td><td>script 或 topic, ratio?</td><td>成片任务 + 文件路径/URL</td><td>POST /tasks/generate-video</td></tr>
+    <tr><td><b>account_review</b></td><td>posts[] 或 csv 路径</td><td>账号诊断+优化建议</td><td>POST /tasks/account-review</td></tr>
+    <tr><td><b>archive_search</b></td><td>query, platform?</td><td>素材库命中列表</td><td>GET /archive</td></tr>
+    <tr><td><b>sync_feishu</b></td><td>table_token, scope?</td><td>同步结果</td><td>POST /feishu/sync</td></tr>
+  </table>
+  <h3>11.3 实现（server.py 摘要）</h3>
+  <pre><code># server.py
+from mcp.server.fastmcp import FastMCP
+import httpx
+
+mcp = FastMCP("media-studio", transport="streamable-http")
+GATEWAY = "http://127.0.0.1:8200"
+
+async def _gw(path: str, body: dict | None = None):
+    async with httpx.AsyncClient() as c:
+        h = {"X-API-Key": GATEWAY_API_KEY}
+        if body: return (await c.post(f"{GATEWAY}/api/v1{path}", json=body, headers=h)).json()
+        return (await c.get(f"{GATEWAY}/api/v1{path}", headers=h)).json()
+
+@mcp.tool()
+async def analyze_link(url: str, deep: bool = True) -> dict:
+    """拆解一条抖音/TikTok 视频链接，返回爆款拆解报告。"""
+    return await _gw("/tasks/analyze-link", {"url": url, "deep": deep})
+
+@mcp.tool()
+async def generate_script(topic: str, style: str = "钩子+故事+干货", refs: list[str] | None = None) -> dict:
+    """根据选题生成爆款风格文案。"""
+    return await _gw("/tasks/generate-script", {"topic": topic, "style": style, "refs": refs or []})
+
+# ... 其余工具同上模式（analyze_blogger / search_keywords / generate_video /
+#      account_review / archive_search / sync_feishu）
+
+if __name__ == "__main__":
+    mcp.run()   # 默认监听 8300，端点 /mcp</code></pre>
+  <h3>11.4 Agent 接入方式</h3>
+  <pre><code># 对 Claude Code / Cursor 等支持 MCP 的客户端：
+# 在 MCP 配置中加入：
+#   "media-studio": { "type": "http", "url": "http://127.0.0.1:8300/mcp" }
+# 之后 Agent 可直接说：「帮我拆解这条抖音链接 https://...」→ 自动调用 analyze_link</code></pre>
+  <div class="note info">💡 <b>与 DTK 自带 MCP 的分工</b>：DTK 的 <span class="kbd">/mcp</span> 只提供「原始采集」工具；studio-mcp 提供「业务级」工具（采集+分析+生成一体），是面向最终用户和上层 Agent 的唯一入口。可在 studio-mcp 内部调用 DTK 的 MCP 或 REST 二选一（建议 REST，便于统一鉴权与日志）。</div>
+  <div class="ac"><b>✅ 验收标准</b>：① 用 MCP Inspector 或 Claude Code 连接 http://127.0.0.1:8300/mcp 能看到 8 个工具；② 实际调用 analyze_link 返回拆解报告。</div>
+</section>
+
+<section id="s12">
+  <h2 class="step">12. Step 8 · 飞书多维表格同步</h2>
+  <h3>12.1 准备</h3>
+  <ol>
+    <li>在飞书开放平台创建企业自建应用，获取 <span class="kbd">app_id</span> / <span class="kbd">app_secret</span>。</li>
+    <li>开通「多维表格」与「云文档」权限；添加应用为多维表格协作者。</li>
+    <li>创建一张多维表格，字段建议：<span class="kbd">平台 / 链接 / 标题 / 点赞 / 评论 / 收藏 / 钩子拆解 / 结构拆解 / 复刻建议 / 采集时间</span>。</li>
+  </ol>
+  <h3>12.2 写入逻辑（clients/feishu.py 摘要）</h3>
+  <pre><code># 1. 换取 tenant_access_token
+#    POST https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal
+#    {"app_id":..., "app_secret":...}
+# 2. 取多维表格 app_token 与 table_id（app_token 在链接 /base/ 后，table_id 在 /tbl 后）
+# 3. 批量写入：
+#    POST /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/batch_create
+#    {"records": [{"fields": {"标题": "...", "点赞": 1234, ...}}]}</code></pre>
+  <div class="note warn">⚠️ 飞书 API 有频率限制（如 100 次/分钟），批量写入请合并记录、加退避重试；敏感数据（他人作品数据）仅供个人素材研究使用。</div>
+  <div class="ac"><b>✅ 验收标准</b>：调用 /api/v1/feishu/sync 后，多维表格出现对应记录且字段正确。</div>
+</section>
+
+<section id="s13">
+  <h2 class="step">13. Step 9 · 前端 UI 与融合衔接</h2>
+  <h3>13.1 技术选型</h3>
+  <p>React 19 + Vite + TypeScript + Ant Design（快速表单/表格/状态组件），单页应用，dev 模式通过 Vite proxy 转发到网关，避免 CORS 配置。</p>
+  <pre><code>npm create vite@latest frontend -- --template react-ts
+cd frontend
+npm i antd axios react-router-dom</code></pre>
+  <h3>13.2 vite.config.ts 代理</h3>
+  <pre><code>export default defineConfig({
+  server: {
+    port: 5173,
+    proxy: { "/api": { target: "http://127.0.0.1:8200", changeOrigin: true } }
+  }
+})</code></pre>
+  <h3>13.3 页面规划（对标一木 6 大功能）</h3>
+  <table>
+    <tr><th>路由</th><th>页面</th><th>核心操作</th><th>调用的 API</th></tr>
+    <tr><td>/</td><td>工作台</td><td>粘贴链接/关键词，一键分析</td><td>tasks/analyze-link · search-keywords</td></tr>
+    <tr><td>/blogger</td><td>博主对标</td><td>输入博主链接，批量拆解</td><td>tasks/analyze-blogger</td></tr>
+    <tr><td>/script</td><td>文案工坊</td><td>选题→生成/仿写文案</td><td>tasks/generate-script</td></tr>
+    <tr><td>/video</td><td>一键成片</td><td>文案→生成短视频</td><td>tasks/generate-video</td></tr>
+    <tr><td>/archive</td><td>素材库</td><td>搜索/筛选历史采集与拆解</td><td>archive · bloggers</td></tr>
+    <tr><td>/tasks</td><td>任务中心</td><td>查看进度/重跑/导出</td><td>tasks/{id} · feishu/sync</td></tr>
+  </table>
+  <h3>13.4 融合衔接要点</h3>
+  <ul>
+    <li><b>任务轮询</b>：创建任务后前端每 2s 轮询 <span class="kbd">GET /tasks/{id}</span> 更新进度条（网关任务状态机保证幂等）。</li>
+    <li><b>结果展示</b>：拆解报告按 JSON schema 渲染卡片（钩子/结构/数据/复刻建议分区），直接落库于 archive 供素材库复用。</li>
+    <li><b>成片回传</b>：MPT 生成的视频文件存于 MPT 输出目录，网关记录绝对路径；前端展示下载链接（生产环境建议网关加 /files 静态托管）。</li>
+    <li><b>鉴权</b>：前端登录页换取网关 token（简单场景可仅用 X-API-Key 放前端 header，生产环境建议改为登录态）。</li>
+    <li><b>一致性</b>：三套系统时间/ID 统一用 UTC 存储、本地时区展示；素材库主键用「平台+作品ID」去重。</li>
+  </ul>
+  <div class="ac"><b>✅ 验收标准</b>：① 浏览器打开 5173 完成「粘贴链接→看报告→入库」全流程；② 任务中心进度实时更新；③ 素材库能搜到历史分析。</div>
+</section>
+
+<section id="s14">
+  <h2>14. 端到端验收清单</h2>
+  <ul class="check">
+    <li>DTK 控制台 /docs 可访问，API Key 生效，真实链接可解析出作品数据。</li>
+    <li>MPT /docs 可访问，config.toml 已配 LLM 与 TTS，一次成片任务成功产出视频。</li>
+    <li>studio-analytics：breakdown / blogger / review / keywords / rewrite 五类分析均返回合法 JSON。</li>
+    <li>studio-gateway：8 类业务任务全部可创建、可轮询、结果入库；401 鉴权生效。</li>
+    <li>studio-mcp：MCP Inspector 可见 8 个工具，analyze_link 与 generate_script 调用成功。</li>
+    <li>飞书同步：archive 数据批量写入多维表格，字段与记录数一致。</li>
+    <li>前端：六个页面可导航，分析结果渲染正常，任务进度实时。</li>
+    <li>AI Agent 通过 MCP 完成一条完整链路：粘贴链接 → 拆解 → 生成文案 → 同步飞书。</li>
+  </ul>
+  <p><b>端到端冒烟用例（AI 可直接执行）</b>：调用 <span class="kbd">analyze_link("https://v.douyin.com/真实链接/")</span> → 拿到报告后调用 <span class="kbd">generate_script(topic=报告标题, refs=[报告复刻建议])</span> → 调用 <span class="kbd">sync_feishu(table_token)</span>。三步全部成功即视为 MVP 达成。</p>
+
+  <h3>14.1 实测进度（2026-09-30 本机已跑通）</h3>
+  <div class="note ok">✅ <b>已实际运行并验证</b>：DTK 五容器 healthy(:8000) · studio-analytics(:8100) · studio-gateway(:8200) · studio-mcp(:8300) · MPT(:8088) · 前端(:5173)。网关 <span class="kbd">/health</span> 返回四服务全 up；analyze-link、search-keywords、generate-video 任务实测 succeeded。</div>
+  <p><b>成片链路实测（generate-video）</b>：progress 已推进到 40%，逐阶段结果——</p>
+  <ul>
+    <li>✅ <b>terms 阶段</b>：网关把 AI 生成的 <span class="kbd">video_terms</span> 直接传给 MPT（字段 <span class="kbd">video_terms</span>），<b>绕过 MPT 内部 moonshot LLM</b>，不再卡 terms。</li>
+    <li>✅ <b>audio 阶段</b>：MPT 的 azure_tts_v1 底层即免费 Edge TTS；网关默认传 <span class="kbd">voice_name="zh-CN-XiaoxiaoNeural"</span>，配音实测成功。</li>
+    <li>⛔ <b>pipeline 阶段（唯一阻塞）</b>：<span class="kbd">pexels_api_keys is not set</span>——需配置素材源 key 后才能下载素材并合成。</li>
+  </ul>
+  <div class="note info">💡 <b>最终配置清单（按优先级）</b>：
+    <ol style="margin:6px 0 0;">
+      <li><b>【必需·免费】素材源 key</b>：到 https://www.pexels.com/api/ 注册（或 pixabay），把 key 填入 MPT <span class="kbd">config.toml</span> 的 <span class="kbd">pexels_api_keys=["xxx"]</span>，重启 MPT 即可真正成片。</li>
+      <li><b>【可选】LLM key</b>：不填则 analytics 用 Mock；可在前端「系统设置」页自填任意 OpenAI 兼容 key，或用本地免费 Ollama（base_url=http://localhost:11434/v1）。设置后 analytics 自动从 Mock 切真实。</li>
+      <li><b>【可选】飞书凭据</b>：在「系统设置」填 app_id/app_secret，并在同步请求带 app_token、table_id，即可把报告写入多维表格。</li>
+    </ol>
+  </div>
+  <p style="color:#57606a;font-size:13px;">端口说明：MPT 官方默认 8080，本机 8080 被用户其他项目（sanshi）的 Docker 容器占用，故全链路统一改用 <b>8088</b>（网关用环境变量 MPT_URL=http://127.0.0.1:8088）。</p>
+</section>
+
+<section id="s15">
+  <h2>15. 安全与合规</h2>
+  <h3>15.1 License 边界</h3>
+  <table>
+    <tr><th>组件</th><th>协议</th><th>二次开发/商用注意</th></tr>
+    <tr><td>DTK v5</td><td>Apache-2.0</td><td>可商用、可闭源；保留版权声明与 NOTICE 即可</td></tr>
+    <tr><td>MPT</td><td>MIT</td><td>可商用、可闭源；保留版权声明</td></tr>
+    <tr><td>XHS-Downloader</td><td>GPL-3.0</td><td>独立进程调用 OK；并入代码分发则需 GPL 开源</td></tr>
+    <tr><td>自建模块</td><td>自有</td><td>自主决定开源协议</td></tr>
+  </table>
+  <h3>15.2 爬虫与平台风险</h3>
+  <ul>
+    <li>平台接口随时可能变更签名算法/风控，导致采集失败——架构上已通过「HTTP 解耦 + 异步任务」隔离故障。</li>
+    <li>仅采集<b>公开数据</b>用于个人研究与素材学习；禁止批量抓取他人隐私数据、绕过登录限制、冲击接口频率。</li>
+    <li>账号风险：DTK 使用匿名身份池；如导入自有登录 Cookie 会扩大可见范围，但请勿在共享/演示环境导入私人 Cookie。</li>
+  </ul>
+  <h3>15.3 系统安全</h3>
+  <ul>
+    <li>所有 API 强制 X-API-Key 鉴权；生产环境改用登录态 + 角色权限。</li>
+    <li>密钥集中管理：<span class="kbd">.env</span> 不入 Git，使用前检查 <span class="kbd">git status</span> 确认无泄露。</li>
+    <li>网关是唯一对外入口；DTK/MPT 端口建议仅绑定 127.0.0.1 或置于内网。</li>
+    <li>飞书凭据仅存网关，按最小权限授权。</li>
+  </ul>
+</section>
+
+<section id="s16">
+  <h2>附录 A · DTK v5 接口速查</h2>
+  <table>
+    <tr><th>能力</th><th>示例端点（以 /docs 为准）</th><th>说明</th></tr>
+    <tr><td>解析链接</td><td>POST /api/v1/parse</td><td>支持短链/分享文案/纯 ID；异步 202+task_id，可 ?wait=true</td></tr>
+    <tr><td>作品详情</td><td>GET /api/v1/posts/{id}</td><td>含文案、播放/点赞/评论/分享等字段</td></tr>
+    <tr><td>博主主页</td><td>GET /api/v1/authors/{uid}</td><td>粉丝、作品数、简介等</td></tr>
+    <tr><td>博主作品列表</td><td>GET /api/v1/authors/{uid}/posts</td><td>分页取全部作品（对标拆解用）</td></tr>
+    <tr><td>评论</td><td>GET /api/v1/posts/{id}/comments</td><td>含二级回复</td></tr>
+    <tr><td>搜索</td><td>GET /api/v1/search?keyword=</td><td>关键词找爆款入口</td></tr>
+    <tr><td>媒体下载</td><td>POST /api/v1/download</td><td>无水印视频/图集，Go 侧车下载</td></tr>
+    <tr><td>监控/收藏</td><td>POST /api/v1/watch</td><td>定时重采（博主/作品）</td></tr>
+    <tr><td>自带 MCP</td><td>/mcp</td><td>streamable-http，客户端配置见控制台 /mcp-guide</td></tr>
+  </table>
+  <p>鉴权：<span class="kbd">Authorization: Bearer &lt;DTK_API_KEY&gt;</span>；93 个操作的精确参数以自身实例 <span class="kbd">/docs</span> 为准（OpenAPI 生成，永不过时）。</p>
+</section>
+
+<section id="s17">
+  <h2>附录 B · MoneyPrinterTurbo 接口速查</h2>
+  <table>
+    <tr><th>能力</th><th>端点（以 /docs 为准）</th><th>说明</th></tr>
+    <tr><td>创建成片任务</td><td>POST /api/v1/videos</td><td>body 含 video_subject / script / aspect / voice / 素材源等</td></tr>
+    <tr><td>任务进度</td><td>GET /api/v1/tasks/{id}</td><td>status + progress + result</td></tr>
+    <tr><td>任务列表</td><td>GET /api/v1/tasks</td><td>历史任务</td></tr>
+    <tr><td>配置查询/更新</td><td>GET/PUT /api/v1/config</td><td>LLM/TTS/素材配置</td></tr>
+    <tr><td>模板/音色</td><td>GET /api/v1/templates 等</td><td>UI 辅助接口</td></tr>
+    <tr><td>官方 AI Skill</td><td>docs/skill/SKILL.md</td><td>AI Agent 可直接读取并操作 MPT</td></tr>
+  </table>
+  <p>说明：MPT 无内置鉴权，建议仅内网/本机访问；服务端调用不受 CORS 限制；输出视频位于其 <span class="kbd">storage/tasks/{id}/</span> 目录。</p>
+</section>
+
+<section id="s18">
+  <h2>附录 C · 提示词模板（核心资产）</h2>
+  <p>以下模板按「系统指令 + 输出 JSON 要求」组织，全部要求<b>只基于输入数据、不编造</b>。文件存入 <span class="kbd">studio/analytics/prompts/</span>。</p>
+  <h3>C.1 爆款拆解 breakdown.md</h3>
+  <pre><code>你是资深短视频编导与爆款拆解专家。请基于提供的视频数据（文案、标题、各项数据）
+完成结构化拆解，输出合法 JSON（字段见 schemas.BreakdownResult），要求：
+- hook：开头 3 秒抓住人的原因（悬念/反差/共鸣/利益点…）
+- structure：按时间轴拆成段落，标注每段目的（hook→铺垫→干货→情绪→CTA）
+- rhythm：句式节奏特点（短句密度、停顿、重复、语气词）
+- takeaways：3~5 条可复刻的具体方法，必须可操作
+- replication_advice：结合数据给复刻建议（选题/结构/节奏）
+严禁编造输入中没有的数据；数据缺失的字段如实写"输入未提供"。</code></pre>
+  <h3>C.2 博主对标 blogger.md</h3>
+  <pre><code>你是博主对标分析专家。基于博主主页信息与最近 N 条作品数据，输出 JSON：
+- positioning：账号定位一句话
+- content_matrix：3~6 个栏目/选题类型及其占比与表现
+- techniques：该博主反复使用的钩子/开头/结构/互动技巧（带作品举例）
+- growth_pattern：涨粉路径判断（蹭热点/系列/人设/投流…）
+- transferable：可直接转用到我自己账号的方法（标注适用前提）
+数据不足的维度明确写"样本不足，无法判断"。</code></pre>
+  <h3>C.3 账号复盘 review.md</h3>
+  <pre><code>你是账号数据诊断顾问。基于我账号的视频数据（文案+播放/完播/互动等），输出 JSON：
+- strengths：做得好的 2~3 点（附数据佐证）
+- pain_points：存在的卡点（选题/开头/节奏/时长/更新频率…），每条给出判断依据
+- diagnosis：整体诊断结论
+- action_plan：下一步优化建议（按优先级排序，可执行、可量化）
+- next_topics：3 个建议选题方向（结合表现最好的视频）
+只依据输入数据下结论，不臆测。</code></pre>
+  <h3>C.4 关键词找爆款 keywords.md</h3>
+  <pre><code>你是选题与爆款研究专家。基于关键词搜索到的爆款视频列表（含文案与数据），输出 JSON：
+- trend：该关键词下的内容趋势判断
+- winners：3~5 条最值得研究的爆款（标题/数据/为什么火）
+- patterns：爆款的共同规律（钩子类型/结构/时长/情绪）
+- gaps：尚未被做透的细分角度（机会点）
+- replication：具体复刻建议（可直接执行的选题清单 3~5 条）</code></pre>
+  <h3>C.5 仿写三件套 rewrite.md</h3>
+  <pre><code>你是文案仿写专家。支持三种模式（mode 字段：structure|rewrite|dedup）：
+- structure：提炼原文案结构骨架，套用我的信息生成新文案
+- rewrite：在保留选题内核的前提下改写为适合我的账号的文案（换人设/换例子/换语言风格）
+- dedup：对原文案做去重改写（调整句式、词汇、案例、结构顺序），保证语义不变、表达全新
+输出 JSON：{ "mode": ..., "original_summary": ..., "new_script": ... }
+要求：新文案与原文案语言重合度显著降低，可直接发布。</code></pre>
+</section>
+
+<section id="s19">
+  <h2>附录 D · 环境变量清单</h2>
+  <table>
+    <tr><th>变量</th><th>所属服务</th><th>说明</th></tr>
+    <tr><td>DTK_SECRET_KEY / POSTGRES_PASSWORD / REDIS_PASSWORD / DTK_DATABASE_URL / DTK_REDIS_URL</td><td>DTK .env</td><td>采集层容器密钥与连接串</td></tr>
+    <tr><td>DTK_API_KEY</td><td>studio-gateway</td><td>网关调用 DTK 的认证</td></tr>
+    <tr><td>ANALYTICS_LLM_KEY / ANALYTICS_LLM_BASE / ANALYTICS_LLM_MODEL</td><td>studio-analytics</td><td>AI 引擎的 LLM 凭据（OpenAI 兼容）</td></tr>
+    <tr><td>GATEWAY_API_KEY</td><td>studio-gateway / studio-mcp / frontend</td><td>对外业务接口统一鉴权</td></tr>
+    <tr><td>MPT_LLM_PROVIDER / MPT_LLM_API_KEY / MPT_TTS_PROVIDER</td><td>MPT config.toml</td><td>生成层 LLM 与配音配置</td></tr>
+    <tr><td>FEISHU_APP_ID / FEISHU_APP_SECRET / FEISHU_BASE_TOKEN / FEISHU_TABLE_ID</td><td>studio-gateway</td><td>飞书多维表格写入凭据</td></tr>
+    <tr><td>CORS_ALLOWED_ORIGINS</td><td>MPT / studio-gateway</td><td>允许跨域来源（前端直连时才需要）</td></tr>
+  </table>
+  <p style="margin-top:16px;color:#57606a;font-size:13px;">— 文档结束 · 按 §0 规则执行，每步验收通过后再前进 —</p>
+</section>
+
+<section id="s20">
+  <h2>附录 E · 上游真实代码核对与融合改造（基于实际拉取版本）</h2>
+  <div class="note info">📌 本附录基于<b>实际拉取到本地的源码</b>逐文件核对。正文（Step 2–9）若与本附录在「入口文件 / 路由路径 / 请求头 / 字段名」上有出入，<b>一律以本附录为准</b>。</div>
+
+  <h3>E.1 版本、路径与拉取方式（已验证）</h3>
+  <table>
+    <tr><th>项目</th><th>版本/分支</th><th>协议</th><th>Python</th><th>本地路径</th></tr>
+    <tr><td>Douyin_TikTok_Download_API</td><td>v5.1.1（main）</td><td>Apache-2.0</td><td>&gt;=3.12,&lt;3.14</td><td>C:\Users\24688\dev\Douyin_TikTok_Download_API</td></tr>
+    <tr><td>XHS-Downloader</td><td>main</td><td>GPL-3.0</td><td>3.x</td><td>C:\Users\24688\dev\XHS-Downloader</td></tr>
+    <tr><td>MoneyPrinterTurbo</td><td>main</td><td>MIT</td><td>3.11+</td><td>C:\Users\24688\dev\MoneyPrinterTurbo</td></tr>
+  </table>
+  <p style="font-size:13.5px;color:#57606a;">本机 github.com:443 直连不通且无代理，实测可用加速通道为 <code>https://gh-proxy.com/&lt;github完整URL&gt;</code>（gitclone / kkgithub / ghfast / gitee 个人镜像均失败或需登录）。MPT 因仓库较大、git 代理传输易断，改用源码 ZIP：<code>.../MoneyPrinterTurbo/archive/refs/heads/main.zip</code>。</p>
+
+  <h3>E.2 三个项目真实目录结构</h3>
+  <pre><code>Douyin_TikTok_Download_API/
+├─ src/dtk/
+│  ├─ api/                  # FastAPI 应用
+│  │  ├─ app.py console.py deps.py envelope.py middleware.py public_endpoints.py
+│  │  ├─ routes/           # archive auth content downloads ios operations
+│  │  │                    # passwords sessions setup support system tasks tools
+│  │  └─ routes/admin/     # access api_keys demo health identities logs
+│  │                       # maintenance proxies proxy_urls settings users watchlist
+│  ├─ mcp/                 # context gateway http prose routing server tools __main__
+│  ├─ cli/ core/ db/ identity/ media/ models/ ops/
+│  ├─ platforms/ scheduler/ services/ signing/ transport/ urls/ worker/ i18n/
+├─ web/                    # React19 + TS + Vite 控制台
+├─ docker/ scripts/ tests/ documents/ install/
+├─ pyproject.toml uv.lock alembic.ini .env.example Makefile
+
+XHS-Downloader/
+├─ source/
+│  ├─ application/         # app download explore image request user_posted video
+│  ├─ CLI/ expansion/ GUI/ module/ TUI/ translation/
+├─ main.py example.py setup.py requirements.txt pyproject.toml Dockerfile
+
+MoneyPrinterTurbo/
+├─ app/
+│  ├─ asgi.py              # ★真实入口（不是 main.py）：CORS+Origin防护+静态挂载
+│  ├─ router.py config/
+│  ├─ controllers/
+│  │  ├─ base.py ping.py
+│  │  ├─ manager/          # base_manager / memory_manager / redis_manager
+│  │  └─ v1/               # base.py llm.py video.py
+│  ├─ models/              # schema(VideoParams/TaskVideoRequest...) exception
+│  └─ services/            # task video voice subtitle bgm state material ...
+└─ config.example.toml</code></pre>
+
+  <h3>E.3 真实关键依赖</h3>
+  <table>
+    <tr><th>项目</th><th>关键依赖（实测）</th><th>入口/命令</th></tr>
+    <tr><td>DTK</td><td>fastapi, uvicorn[standard], pydantic, pydantic-settings, sqlalchemy[asyncio]&gt;=2.0.52, asyncpg, alembic, redis[hiredis], wreq, httpx, structlog, cryptography, argon2-cffi, typer, rich, <b>mcp&gt;=2.2.0</b>, python-multipart</td><td>CLI：<code>dtk</code>（dtk.cli.main:app）</td></tr>
+    <tr><td>XHS</td><td>fastapi==0.141, <b>fastmcp==4.0.3</b>, uvicorn, curl-cffi, aiosqlite, textual, pywebview, click, lxml, websockets, emoji</td><td>main.py</td></tr>
+    <tr><td>MPT</td><td>fastapi, loguru；自带 memory/redis 任务管理器；视频走 ffmpeg</td><td>app.asgi:app</td></tr>
+  </table>
+
+  <h3>E.4 MoneyPrinterTurbo 真实 API（重点核对）</h3>
+  <p style="font-size:13.5px;">鉴权：v1 路由统一 <code>Depends(base.verify_token)</code>，读取 <code>app.api_key</code>；<b>api_key 留空则免认证</b>。具体 Token 请求头名称以 <code>app/controllers/base.py</code> 的 verify_token 实现为准（接入前先读该文件，勿臆测）。</p>
+  <table>
+    <tr><th>方法 & 路径</th><th>请求体 / 参数</th><th>说明</th></tr>
+    <tr><td>POST /api/v1/videos</td><td>TaskVideoRequest</td><td>生成完整视频（stop_at=video）</td></tr>
+    <tr><td>POST /api/v1/subtitle</td><td>SubtitleRequest</td><td>仅生成字幕</td></tr>
+    <tr><td>POST /api/v1/audio</td><td>AudioRequest</td><td>仅生成配音</td></tr>
+    <tr><td>GET /api/v1/tasks</td><td>?page&amp;page_size</td><td>分页任务列表</td></tr>
+    <tr><td>GET /api/v1/tasks/{id}</td><td>—</td><td>查询状态/产物（含 videos、combined_videos URI）</td></tr>
+    <tr><td>DELETE /api/v1/tasks/{id}</td><td>—</td><td>删除任务；运行中返回 <b>409</b></td></tr>
+    <tr><td>GET·POST /api/v1/musics</td><td>UploadFile</td><td>BGM 列表 / 上传（白名单目录，仅返回文件名）</td></tr>
+    <tr><td>GET·POST /api/v1/video_materials</td><td>UploadFile</td><td>本地素材列表 / 上传</td></tr>
+    <tr><td>GET /api/v1/stream/{path}</td><td>Range 头</td><td>在线播放，支持断点，分片返回 <b>206</b></td></tr>
+    <tr><td>GET /api/v1/download/{path}</td><td>—</td><td>下载成品文件</td></tr>
+  </table>
+  <p style="font-size:13.5px;">内置队列：<code>max_concurrent_tasks=5</code>、<code>max_queued_tasks=100</code>；队列满返回 <b>429 TaskQueueFullError</b>。CORS 默认同源关闭，前端跨域需设环境变量 <code>CORS_ALLOWED_ORIGINS</code>（逗号分隔，精确来源）。</p>
+
+  <h3>E.5 融合改造点（逐项可执行）</h3>
+  <ol>
+    <li><b>统一配置/启动</b>：三个下游的 URL、密钥只存在 studio-gateway；用 docker-compose 编排（DTK 已自带 docker/ 与 .env.example，可直接参考）。</li>
+    <li><b>采集对接</b>：抖音/TikTok 调 DTK 的解析路由（在 routes/content.py，启动后以其 <code>/docs</code> OpenAPI 实际路径为准）；小红书走 XHS <b>独立进程/容器 + FastAPI</b>（GPL 隔离，禁止 import 其源码），结果统一映射到 §9.3 schema。</li>
+    <li><b>成片对接</b>：网关把 AI 文案放进 TaskVideoRequest 提交 <code>POST /api/v1/videos</code>，轮询 <code>GET /tasks/{id}</code>，完成后用 <code>/stream/{path}</code>（播放）或 <code>/download/{path}</code> 取片。</li>
+    <li><b>AI 引擎（差异化核心）</b>：输入 DTK/XHS 结构化数据，输出统一 schema，五份提示词见附录 C。</li>
+    <li><b>网关 Map-Reduce</b>：复用 Step 6.5 的 map_parallel，对博主/关键词/复盘任务做 fan-out。</li>
+    <li><b>MCP 分层</b>：DTK、XHS <b>已自带 MCP（采集工具）</b>，studio-mcp 只做上层「业务编排」8 工具，通过网关组合下游，<b>不重复实现采集类工具</b>。</li>
+    <li><b>前端</b>：React19+TS+Vite，直接参考 DTK 的 web/ 工程结构与请求封装。</li>
+  </ol>
+
+  <h3>E.6 真实对接代码（可直接落地）</h3>
+  <h4>E.6.1 MPT 客户端（提交 → 轮询 → 取片）</h4>
+  <pre><code># studio/gateway/clients/mpt.py
+import httpx
+
+class MPTClient:
+    def __init__(self, base_url: str, api_key: str = ""):
+        self.base = base_url.rstrip("/")
+        # Token 请求头以 app/controllers/base.py 的 verify_token 为准
+        self.headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+
+    async def create_video(self, params: dict) -> str:
+        async with httpx.AsyncClient(timeout=30) as c:
+            r = await c.post(f"{self.base}/api/v1/videos", json=params, headers=self.headers)
+            r.raise_for_status()
+            return r.json()["data"]["task_id"]
+
+    async def get_task(self, task_id: str) -> dict:
+        async with httpx.AsyncClient(timeout=30) as c:
+            r = await c.get(f"{self.base}/api/v1/tasks/{task_id}", headers=self.headers)
+            r.raise_for_status()
+            return r.json()["data"]
+
+    def stream_url(self, path: str) -> str:
+        return f"{self.base}/api/v1/stream/{path}"</code></pre>
+  <h4>E.6.2 XHS 独立进程隔离调用（避免 GPL 传染）</h4>
+  <pre><code># studio/gateway/clients/xhs.py
+import asyncio
+
+async def fetch_xhs(url: str, out_dir: str):
+    # 以独立子进程运行 XHS 工程，不 import；仅通过文件/其 FastAPI 交换数据
+    proc = await asyncio.create_subprocess_exec(
+        "python", "main.py", "--link", url, "--path", out_dir,
+        cwd=r"C:\Users\24688\dev\XHS-Downloader",
+        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+    await proc.wait()
+    return proc.returncode == 0</code></pre>
+
+  <h3>E.7 复用 vs 需自写（工作量边界）</h3>
+  <table>
+    <tr><th>模块</th><th>复用上游</th><th>需自己写</th></tr>
+    <tr><td>抖音/TikTok 采集</td><td>DTK 全量</td><td>仅网关封装 + 字段映射</td></tr>
+    <tr><td>小红书采集</td><td>XHS 全量</td><td>独立进程封装</td></tr>
+    <tr><td>视频成片</td><td>MPT 全量</td><td>传参 + 轮询 + 取片</td></tr>
+    <tr><td>爆款拆解/博主对标/账号复盘/仿写</td><td>无（差异化）</td><td><b>提示词 + LLM 编排（核心工作量）</b></td></tr>
+    <tr><td>网关 / 鉴权 / 任务状态机</td><td>可参考 DTK</td><td>自写</td></tr>
+    <tr><td>MCP 业务编排</td><td>FastMCP 框架</td><td>8 个业务工具</td></tr>
+    <tr><td>前端控制台</td><td>参考 DTK web/</td><td>业务页面</td></tr>
+  </table>
+  <div class="ac"><b>✅ 验收标准</b>：① 三个项目在 C:\Users\24688\dev 下可查；② 用 E.6.1 客户端成功向 MPT 提交任务并取到可播放 stream URL；③ E.6.2 子进程方式跑通一次小红书采集；④ 网关把 DTK 采集 → AI 拆解 → MPT 成片串成一条链路。</div>
+</section>
+
+</main>
+</div>
+</body>
+</html>

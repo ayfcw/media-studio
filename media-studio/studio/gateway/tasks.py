@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import sqlite3
 import threading
 import uuid
@@ -22,7 +23,7 @@ os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
 os.environ.setdefault("HF_HUB_ETAG_TIMEOUT", "5")
 os.environ.setdefault("HF_HUB_DOWNLOAD_TIMEOUT", "30")
 
-from studio.gateway.clients import AnalyticsClient, DTKClient, MPTClient
+from studio.gateway.clients import AnalyticsClient, DTKClient, MPTClient, XHSClient
 
 DATA_DIR = Path(os.environ.get("STUDIO_DATA_DIR", Path(__file__).resolve().parents[3] / "data"))
 DB_PATH = DATA_DIR / "gateway.db"
@@ -128,7 +129,7 @@ def local_videos_dir() -> Path:
     """
     env_dir = os.environ.get("STUDIO_LOCAL_VIDEOS_DIR")
     return Path(env_dir) if env_dir else Path(
-        r"C:\Users\24688\dev\MoneyPrinterTurbo\storage\local_videos"
+        r"D:\MediaStudio\MoneyPrinterTurbo\storage\local_videos"
     )
 
 
@@ -149,6 +150,7 @@ def list_local_materials() -> list[dict[str, Any]]:
 
 analytics = AnalyticsClient()
 dtk = DTKClient()
+xhs = XHSClient()
 mpt = MPTClient()
 
 _sem = asyncio.Semaphore(int(os.environ.get("GATEWAY_CONCURRENCY", "4")))
@@ -250,17 +252,63 @@ def _real_source(post: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
+_XHS_RE = re.compile(r"xiaohongshu\.com|xhslink\.com", re.I)
+
+
+def _xhs_post(data: dict[str, Any], raw_url: str) -> dict[str, Any]:
+    """把 XHS-Downloader /xhs/detail 的中文键结果映射为 DTK 风格 post，复用拆解管线。"""
+    def _num(v: Any) -> int | None:
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return None
+
+    dl = [u for u in (data.get("下载地址") or []) if isinstance(u, str) and u]
+    cover = data.get("封面地址")
+    is_video = (data.get("作品类型") == "视频") and dl
+    media: dict[str, Any] = {"cover": {"url": cover} if cover else None}
+    if is_video:
+        media["video"] = {"url": dl[0]}
+    elif dl:
+        media["image"] = dl[0]
+    return {
+        "kind": "video" if is_video else "image",
+        "platform": "xiaohongshu",
+        "title": data.get("作品标题") or (data.get("作品描述") or "")[:50],
+        "description": data.get("作品描述"),
+        "tags": (data.get("作品标签") or "").split(),
+        "web_url": data.get("作品链接") or raw_url,
+        "author": {"nickname": data.get("作者昵称"), "web_url": data.get("作者链接")},
+        "stats": {
+            "digg_count": _num(data.get("点赞数量")),
+            "collect_count": _num(data.get("收藏数量")),
+            "comment_count": _num(data.get("评论数量")),
+            "share_count": _num(data.get("分享数量")),
+        },
+        "media": media,
+        "duration_ms": None,
+    }
+
+
 async def h_analyze_link(p: dict[str, Any]) -> dict[str, Any]:
     post: dict[str, Any]
-    try:
-        post = await dtk.parse(p["url"])
-    except Exception:
-        post = {"url": p["url"]}  # 降级：DTK 未就绪
+    is_xhs = bool(_XHS_RE.search(p["url"] or ""))
+    if is_xhs:
+        # 小红书链接：走 XHS-Downloader（跳过 DTK 与 DTK 评论）
+        try:
+            post = _xhs_post(await xhs.detail(p["url"]), p["url"])
+        except Exception as e:
+            post = {"url": p["url"], "error": f"小红书解析失败: {e}"}
+    else:
+        try:
+            post = await dtk.parse(p["url"])
+        except Exception:
+            post = {"url": p["url"]}  # 降级：DTK 未就绪
 
-    # 评论采集（best-effort：失败不影响拆解主流程）
+    # 评论采集（best-effort：失败不影响拆解主流程；仅抖音走 DTK 评论）
     comments: list[dict[str, Any]] = []
     web_url = post.get("web_url") if isinstance(post, dict) else None
-    if web_url:
+    if web_url and not is_xhs:
         try:
             raw = await dtk.comments(web_url, count=20)
             comments = [
@@ -291,6 +339,10 @@ async def h_analyze_link(p: dict[str, Any]) -> dict[str, Any]:
         post = {**post, "transcript": transcript}
 
     report = await analytics.analyze("breakdown", post)
+    if post.get("error"):
+        # 采集失败（如小红书风控/Cookie 失效）：明确告知前端，避免误读为真实数据
+        report["collect_error"] = post["error"]
+        report["demo_mode"] = True
     src = _real_source(post)
     if src:
         report["source"] = src
@@ -328,7 +380,7 @@ def _mc_search(keyword: str, count: int) -> list[dict[str, Any]]:
     import subprocess
 
     mc_home = Path(os.environ.get(
-        "STUDIO_MC_HOME", r"C:\Users\24688\dev\MediaCrawler"))
+        "STUDIO_MC_HOME", r"D:\MediaStudio\MediaCrawler"))
     mc_py = os.environ.get(
         "STUDIO_MC_PYTHON", str(mc_home / ".venv" / "Scripts" / "python.exe"))
     out_dir = MEDIA_DIR / "search" / uuid.uuid4().hex
@@ -393,23 +445,30 @@ async def h_search_keywords(p: dict[str, Any]) -> dict[str, Any]:
     # 首选：MediaCrawler 真实搜索（本地运行，需登录态）
     items: list[dict[str, Any]] = []
     search_source = "degraded"
+    mc_error: str | None = None
     if os.environ.get("STUDIO_MC_ENABLED", "1") != "0" and Path(
-        os.environ.get("STUDIO_MC_HOME", r"C:\Users\24688\dev\MediaCrawler")
+        os.environ.get("STUDIO_MC_HOME", r"D:\MediaStudio\MediaCrawler")
     ).exists():
         try:
             items = await asyncio.to_thread(_mc_search, primary, count)
             search_source = "mediacrawler"
-        except Exception:
+        except Exception as e:
             items = []
+            mc_error = f"{type(e).__name__}: {str(e)[:300]}"
     # 降级：DTK 批量解析分享链接（无搜索能力，仅当 links 提供时有效）
     if not items:
         try:
             items = await dtk.search(primary, count)
-        except Exception:
+        except Exception as e:
             items = []
+            if not mc_error:
+                mc_error = f"dtk.search {type(e).__name__}: {str(e)[:200]}"
     report = await analytics.analyze(
         "keywords", {"keyword": primary, "keywords": raw, "items": items}
     )
+    if mc_error:
+        report["search_source"] = search_source
+        report["search_error"] = mc_error
     if items and search_source == "mediacrawler":
         report["search_source"] = "mediacrawler"
         report["search_items"] = items

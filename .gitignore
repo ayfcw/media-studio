@@ -27,3 +27,11 @@ web-dist/
 *.zip
 *.log
 .DS_Store
+
+# ===== 临时调试脚本（部署排查用，不入库）=====
+deploy_cloud/test_*
+deploy_cloud/debug_*
+deploy_cloud/check_*
+deploy_cloud/get_*
+deploy_cloud/mc_test.ps1
+*.png

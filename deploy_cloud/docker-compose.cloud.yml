@@ -37,6 +37,9 @@ services:
       STUDIO_DATA_DIR: "/data"
       # 一键成片 local 模式的素材目录（与 mpt 容器共享同一宿主目录）
       STUDIO_LOCAL_VIDEOS_DIR: "/data/local_videos"
+      # 服务器内存 1.8G：转写用 base 档 + 用完释放（本地默认 small 常驻）
+      STUDIO_ASR_MODEL: "base"
+      STUDIO_ASR_EPHEMERAL: "1"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

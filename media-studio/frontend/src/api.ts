@@ -52,6 +52,7 @@ export interface Settings {
   feishu?: { app_id?: string; app_secret_configured?: boolean }
   dtk?: { api_key_configured?: boolean }
   kb?: { url?: string }
+  xhs?: { cookie_configured?: boolean }
 }
 
 export interface MaterialItem {

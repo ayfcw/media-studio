@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   Alert, Badge, Button, Card, Col, Descriptions, Drawer, Form, Input, InputNumber,
-  Layout, Menu, Popconfirm, Progress, Row, Select, Space, Statistic, Switch, Table, Tabs,
-  Tag, Typography, Upload, message,
+  Layout, Menu, Modal, Popconfirm, Progress, Row, Select, Space, Statistic, Switch, Table, Tabs,
+  Tag, Typography, Upload,
 } from 'antd'
+import { message } from './message'
 import {
   AimOutlined, AppstoreOutlined, BookOutlined, CloudUploadOutlined, DashboardOutlined,
   DeleteOutlined, FileTextOutlined, InboxOutlined, PlayCircleOutlined, ReloadOutlined,
@@ -367,6 +368,7 @@ function MaterialsPanel() {
   const [items, setItems] = useState<MaterialItem[]>([])
   const [dir, setDir] = useState('')
   const [pct, setPct] = useState<number | null>(null)
+  const [preview, setPreview] = useState<MaterialItem | null>(null)
 
   const load = () => api.listMaterials()
     .then((r) => { setItems(r.items); setDir(r.dir) })
@@ -412,15 +414,27 @@ function MaterialsPanel() {
             render: (v: number) => fmtSize(v) },
           { title: '上传时间', dataIndex: 'modified_at', width: 180,
             render: (v: string) => v ? new Date(v).toLocaleString('zh-CN', { hour12: false }) : '-' },
-          { title: '', width: 70,
+          { title: '', width: 110,
             render: (_, it) => (
-              <Popconfirm title="删除这个素材？" description="不影响已生成的成片"
-                onConfirm={() => api.deleteMaterial(it.name).then(load)}>
-                <Button size="small" type="text" danger icon={<DeleteOutlined />} />
-              </Popconfirm>
+              <Space size={0}>
+                <Button size="small" type="text" icon={<PlayCircleOutlined />}
+                  onClick={() => setPreview(it)} />
+                <Popconfirm title="删除这个素材？" description="不影响已生成的成片"
+                  onConfirm={() => api.deleteMaterial(it.name).then(load)}>
+                  <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+                </Popconfirm>
+              </Space>
             ) },
         ]}
       />
+      <Modal title={preview?.name} open={!!preview} footer={null} width={720}
+        onCancel={() => setPreview(null)} destroyOnHidden>
+        {preview && (
+          <video controls autoPlay
+            src={`/api/v1/materials/view/${encodeURIComponent(preview.name)}`}
+            style={{ width: '100%', maxHeight: '70vh', borderRadius: 8, background: '#000' }} />
+        )}
+      </Modal>
     </>
   )
 }
@@ -548,6 +562,8 @@ function SettingsPanel() {
       llm: { ...v.llm, api_key: v.llm?.api_key || undefined },
       feishu: { ...v.feishu, app_secret: v.feishu?.app_secret || undefined },
       dtk: { api_key: v.dtk?.api_key || undefined },
+      kb: { url: v.kb?.url || undefined },
+      xhs: { cookie: v.xhs?.cookie || undefined },
     }
     try {
       await api.putSettings(body)
@@ -603,6 +619,16 @@ function SettingsPanel() {
           </Form.Item>
         </Form>
       </Card>
+      <Card title="小红书 Cookie（XHS 采集）" style={{ marginBottom: 16 }}
+        extra={cfg.xhs?.cookie_configured
+          ? <Tag color="green">Cookie 已配置</Tag> : <Tag>未配置 · 部分数据可能拿不到</Tag>}>
+        <Form form={form} layout="vertical">
+          <Form.Item name={['xhs', 'cookie']} label="网页版 Cookie"
+            extra="浏览器登录 xiaohongshu.com 后，F12 → Network → 任意请求的 Cookie 请求头整串复制粘贴；留空表示不修改">
+            <Input.Password autoComplete="new-password" placeholder="abRequestId=...; web_session=...; ..." />
+          </Form.Item>
+        </Form>
+      </Card>
       <Card title="知识库（AnythingLLM 等 RAG 服务）" style={{ marginBottom: 16 }}
         extra={cfg.kb?.url ? <Tag color="green">已配置</Tag> : <Tag>未配置</Tag>}>
         <Form form={form} layout="vertical">
@@ -653,8 +679,9 @@ export default function App() {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider theme="dark" width={200}>
-        <div style={{ color: '#fff', padding: '18px 16px 10px', fontWeight: 700, fontSize: 16 }}>
-          陈镇鑫傻瓜式操作平台
+        <div style={{ color: '#fff', padding: '18px 16px 10px', fontWeight: 700, fontSize: 16, lineHeight: 1.3 }}>
+          MediaStudio
+          <div style={{ fontSize: 12, fontWeight: 400, opacity: 0.75, marginTop: 2 }}>创作中枢 · 自媒体全链路工作台</div>
         </div>
         <Menu theme="dark" mode="inline" selectedKeys={[tab]}
           onClick={(e) => setTab(e.key)} items={items.map(({ key, icon, label }) => ({ key, icon, label }))} />

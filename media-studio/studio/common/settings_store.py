@@ -96,4 +96,7 @@ def public_settings() -> dict[str, Any]:
         "kb": {
             "url": kb.get("url"),  # 知识库（如 AnythingLLM）的访问地址，非敏感
         },
+        "xhs": {
+            "cookie_configured": bool(s.get("xhs", {}).get("cookie")),
+        },
     }

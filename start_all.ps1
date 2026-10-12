@@ -1,6 +1,6 @@
-# 自媒体智能体平台 · 一键启动（幂等：已在运行的服务自动跳过）
+﻿# 自媒体智能体平台 · 一键启动（幂等：已在运行的服务自动跳过）
 $ErrorActionPreference = "Continue"
-$root = "C:\Users\24688\dev"
+$root = "D:\MediaStudio"
 function Test-Port($p) { return [bool](Get-NetTCPConnection -LocalPort $p -State Listen -ErrorAction SilentlyContinue) }
 
 # 1. Docker + DTK 采集栈
@@ -60,6 +60,14 @@ if(Test-Port 3001){ Write-Output "[4.5/5] 知识库已在运行，跳过" }
 else {
     Write-Output "[4.5/5] 启动知识库（AnythingLLM）..."
     & $docker start anythingllm 2>$null | Out-Null
+}
+
+# 4.6 小红书采集 XHS-Downloader API（可选，:5556）
+if(Test-Port 5556){ Write-Output "[4.6/5] 小红书采集已在运行，跳过" }
+else {
+    Write-Output "[4.6/5] 启动小红书采集（XHS-Downloader API）..."
+    Start-Process -WindowStyle Hidden -WorkingDirectory "$root\XHS-Downloader" `
+        -FilePath "$root\XHS-Downloader\.venv\Scripts\python.exe" -ArgumentList "main.py","API"
 }
 
 # 5. 前端 :5173

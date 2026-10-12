@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import httpx
-from fastapi import Depends, FastAPI, File, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -39,6 +39,7 @@ class SettingsBody(BaseModel):
     feishu: dict[str, Any] | None = None
     dtk: dict[str, Any] | None = None
     kb: dict[str, Any] | None = None
+    xhs: dict[str, Any] | None = None
 
 
 @app.on_event("startup")
@@ -137,14 +138,29 @@ def materials_delete(name: str) -> dict[str, Any]:
     return {"deleted": True, "name": target.name}
 
 
+@app.get("/api/v1/materials/view/{name}", dependencies=[Depends(require_key)])
+def materials_view(name: str) -> Any:
+    """素材在线预览（<video> 播放，FileResponse 自带 Range 可拖进度）。"""
+    from pathlib import Path
+
+    if not _SAFE_NAME.match(name) or Path(name).suffix.lower() not in tasks.MATERIAL_EXTS:
+        raise HTTPException(status_code=400, detail="bad name")
+    p = Path(_materials_dir()) / name
+    if not p.exists():
+        raise HTTPException(status_code=404, detail="material not found")
+    mime = {".webm": "video/webm", ".mkv": "video/x-matroska"}.get(
+        p.suffix.lower(), "video/mp4")
+    return FileResponse(p, media_type=mime)
+
+
 # ---------------- 采集视频缓存（拆解报告在线播放） ----------------
 @app.get("/api/v1/media/{media_id}.mp4", dependencies=[Depends(require_key)])
 def media_file(media_id: str) -> Any:
     if not re.fullmatch(r"[0-9a-f]{32}", media_id):
-        return {"error": "bad media id"}
+        raise HTTPException(status_code=400, detail="bad media id")
     p = tasks.MEDIA_DIR / f"{media_id}.mp4"
     if not p.exists():
-        return {"error": "media not found"}
+        raise HTTPException(status_code=404, detail="media not found")
     # FileResponse 自带 Range 支持，<video> 可拖进度条
     return FileResponse(p, media_type="video/mp4")
 

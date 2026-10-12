@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   Alert, Button, Card, Descriptions, Divider, Input, Progress, Space, Spin,
-  Table, Tag, Typography, message,
+  Table, Tag, Typography,
 } from 'antd'
+import { message } from './message'
 import { CopyOutlined, DownloadOutlined, ReloadOutlined } from '@ant-design/icons'
 import { api, MptTask, Task } from './api'
 
@@ -100,6 +101,11 @@ function BreakdownView({ r }: { r: Record<string, any> }) {
   return (
     <>
       <DemoBanner r={r} />
+      {r.collect_error && (
+        <Alert type="warning" showIcon style={{ marginBottom: 16 }}
+          message="采集失败，以下分析仅基于链接本身（AI 推断）"
+          description={String(r.collect_error)} />
+      )}
       {r.source && <SourceVideo s={r.source} />}
       {r.source && <TranscriptPanel s={r.source} />}
       {r.source && <SourceCard s={r.source} />}

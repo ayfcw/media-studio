@@ -20,6 +20,7 @@ import httpx
 ANALYTICS_URL = os.environ.get("ANALYTICS_URL", "http://127.0.0.1:8100")
 DTK_URL = os.environ.get("DTK_URL", "http://127.0.0.1:8000")
 MPT_URL = os.environ.get("MPT_URL", "http://127.0.0.1:8080")
+XHS_URL = os.environ.get("XHS_URL", "http://127.0.0.1:5556")
 
 
 def _dtk_headers() -> dict[str, str]:
@@ -159,6 +160,34 @@ class DTKClient:
             "DTK v5 不提供关键词搜索（它是解析器，不是搜索引擎）；"
             "search-keywords 任务请粘贴分享链接批量解析，或后续接入 MediaCrawler"
         )
+
+
+class XHSClient:
+    """小红书采集层（XHS-Downloader API 模式，POST /xhs/detail）。
+
+    Cookie 从系统设置 [xhs].cookie 读取（加密存储），按请求传入；未配置则裸请求
+    （部分数据可能拿不到或触发风控）。返回 data 为中文键 dict（作品标题/点赞数量…）。
+    """
+
+    async def detail(self, url: str, timeout_s: float = 60) -> dict[str, Any]:
+        cookie = ""
+        try:
+            from studio.common.settings_store import get_section
+
+            cookie = get_section("xhs").get("cookie") or ""
+        except Exception:
+            pass
+        cookie = cookie or os.environ.get("XHS_COOKIE", "")
+        body: dict[str, Any] = {"url": url, "download": False, "check_record": False}
+        if cookie:
+            body["cookie"] = cookie
+        async with httpx.AsyncClient(trust_env=False, timeout=timeout_s) as c:
+            r = await c.post(f"{XHS_URL}/xhs/detail", json=body)
+            r.raise_for_status()
+            b = r.json()
+            if not isinstance(b.get("data"), dict) or not b["data"]:
+                raise RuntimeError(f"XHS 解析失败: {b.get('message') or r.text[:200]}")
+            return b["data"]
 
 
 class MPTClient:
