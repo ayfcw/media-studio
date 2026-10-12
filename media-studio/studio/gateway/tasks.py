@@ -371,14 +371,21 @@ async def h_analyze_blogger(p: dict[str, Any]) -> dict[str, Any]:
     return report
 
 
-def _mc_search(keyword: str, count: int) -> list[dict[str, Any]]:
-    """调用本地 MediaCrawler 做抖音关键词搜索（同步子进程，供 to_thread）。
+_MC_PLATFORM_NAMES = {"dy": "douyin", "xhs": "xiaohongshu", "ks": "kuaishou", "bili": "bilibili", "wb": "weibo"}
 
-    需要环境变量 STUDIO_MC_HOME（MediaCrawler 目录），首次运行会弹二维码登录
-    （SAVE_LOGIN_STATE 开启，登录一次后续免扫码）。失败抛异常，由上层降级。
+
+def _mc_search(keyword: str, count: int, platform: str = "dy") -> list[dict[str, Any]]:
+    """调用本地 MediaCrawler 做关键词搜索（同步子进程，供 to_thread）。
+
+    platform ∈ dy/xhs/ks/bili/wb（MediaCrawler 支持的平台）。各平台登录态独立，
+    首次运行会弹二维码扫码（SAVE_LOGIN_STATE 开启，登录一次后续免扫码）。
+    失败抛异常，由上层降级。
     """
     import subprocess
 
+    platform = (platform or "dy").lower()
+    if platform not in _MC_PLATFORM_NAMES:
+        raise RuntimeError(f"不支持的搜索平台: {platform}")
     mc_home = Path(os.environ.get(
         "STUDIO_MC_HOME", r"D:\MediaStudio\MediaCrawler"))
     mc_py = os.environ.get(
@@ -388,7 +395,7 @@ def _mc_search(keyword: str, count: int) -> list[dict[str, Any]]:
 
     cmd = [
         mc_py, "main.py",
-        "--platform", "dy",
+        "--platform", platform,
         "--lt", "qrcode",
         "--type", "search",
         "--keywords", keyword,
@@ -404,9 +411,9 @@ def _mc_search(keyword: str, count: int) -> list[dict[str, Any]]:
     )
     if proc.returncode != 0:
         raise RuntimeError(f"MediaCrawler exit {proc.returncode}: {proc.stderr[-300:]}")
-    # 只取内容文件（排除 search_comments_*.jsonl 评论数据）
+    # 只取内容文件（排除评论数据；xhs 输出文件带平台前缀，用通配）
     rows: list[dict[str, Any]] = []
-    for f in sorted(out_dir.rglob("search_contents_*.jsonl")):
+    for f in sorted(out_dir.rglob("*search_contents_*.jsonl")):
         for line in f.read_text(encoding="utf-8", errors="replace").splitlines():
             line = line.strip()
             if line:
@@ -416,16 +423,24 @@ def _mc_search(keyword: str, count: int) -> list[dict[str, Any]]:
                     pass
     if not rows:
         raise RuntimeError("MediaCrawler 未产出搜索结果")
+    platform_name = _MC_PLATFORM_NAMES[platform]
     items = []
     for row in rows:
         title = (row.get("title") or row.get("desc") or "").strip()
         if not title:
             continue
-        aweme_id = row.get("aweme_id") or row.get("content_id") or ""
+        note_id = (row.get("aweme_id") or row.get("note_id")
+                   or row.get("content_id") or "")
+        url = (row.get("aweme_url") or row.get("xsec_url") or row.get("note_url"))
+        if not url and note_id:
+            if platform == "dy":
+                url = f"https://www.douyin.com/video/{note_id}"
+            elif platform == "xhs":
+                url = f"https://www.xiaohongshu.com/explore/{note_id}"
         items.append({
             "title": title[:80],
-            "url": row.get("aweme_url") or (f"https://www.douyin.com/video/{aweme_id}" if aweme_id else None),
-            "platform": "douyin",
+            "url": url,
+            "platform": platform_name,
             "likes": row.get("liked_count"),
             "comments": row.get("comment_count"),
             "collects": row.get("collected_count"),
@@ -441,6 +456,7 @@ async def h_search_keywords(p: dict[str, Any]) -> dict[str, Any]:
         raw = ", ".join(str(x) for x in raw)
     primary = str(raw).split(",")[0].strip() or str(raw)
     count = int(p.get("count", 10) or 10)
+    platform = str(p.get("platform") or "dy").lower()
 
     # 首选：MediaCrawler 真实搜索（本地运行，需登录态）
     items: list[dict[str, Any]] = []
@@ -450,7 +466,7 @@ async def h_search_keywords(p: dict[str, Any]) -> dict[str, Any]:
         os.environ.get("STUDIO_MC_HOME", r"D:\MediaStudio\MediaCrawler")
     ).exists():
         try:
-            items = await asyncio.to_thread(_mc_search, primary, count)
+            items = await asyncio.to_thread(_mc_search, primary, count, platform)
             search_source = "mediacrawler"
         except Exception as e:
             items = []
@@ -464,7 +480,7 @@ async def h_search_keywords(p: dict[str, Any]) -> dict[str, Any]:
             if not mc_error:
                 mc_error = f"dtk.search {type(e).__name__}: {str(e)[:200]}"
     report = await analytics.analyze(
-        "keywords", {"keyword": primary, "keywords": raw, "items": items}
+        "keywords", {"keyword": primary, "keywords": raw, "platform": platform, "items": items}
     )
     if mc_error:
         report["search_source"] = search_source

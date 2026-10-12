@@ -154,6 +154,15 @@ function Workbench({ onSubmitted }: { onSubmitted: (taskId: string) => void }) {
             <Form.Item name="keyword" label="关键词" rules={[{ required: true, message: '请输入关键词' }]}>
               <Input placeholder="例如：减脂餐（多个用逗号分隔，取第一个搜索）" />
             </Form.Item>
+            <Form.Item name="platform" label="平台" initialValue="dy"
+              extra="小红书/快手/B站/微博首次搜索会弹二维码，扫码一次后免登录">
+              <Select style={{ width: 200 }} options={[
+                { value: 'dy', label: '抖音' },
+                { value: 'xhs', label: '小红书' },
+                { value: 'ks', label: '快手' },
+                { value: 'bili', label: 'B站' },
+                { value: 'wb', label: '微博' }]} />
+            </Form.Item>
             <Form.Item name="count" label="采集条数" initialValue={10}>
               <InputNumber min={1} max={50} style={{ width: 160 }} />
             </Form.Item>
